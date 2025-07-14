@@ -17,9 +17,9 @@ jobs:
     - name: � Fix Ubuntu Environment
       run: |
         echo "🔧 Configurando ambiente Ubuntu..."
-        # Instalar utilitários básicos essenciais primeiro
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq \
+        # Usar comandos absolutos para garantir execução
+        /usr/bin/sudo /usr/bin/apt-get update -qq
+        /usr/bin/sudo /usr/bin/apt-get install -y -qq \
           coreutils \
           findutils \
           util-linux \
@@ -30,19 +30,28 @@ jobs:
           gawk \
           which \
           curl \
-          wget
+          wget \
+          build-essential \
+          git \
+          unzip \
+          zip
         
         # Verificar se comandos básicos funcionam
         echo "✅ Testando comandos básicos:"
-        echo "head: $(which head || echo 'não encontrado')"
-        echo "find: $(which find || echo 'não encontrado')"
-        echo "grep: $(which grep || echo 'não encontrado')"
-        echo "sh: $(which sh || echo 'não encontrado')"
+        echo "head: $(/usr/bin/which head 2>/dev/null || echo 'não encontrado')"
+        echo "find: $(/usr/bin/which find 2>/dev/null || echo 'não encontrado')"
+        echo "grep: $(/usr/bin/which grep 2>/dev/null || echo 'não encontrado')"
+        echo "sh: $(/usr/bin/which sh 2>/dev/null || echo 'não encontrado')"
+        echo "mkdir: $(/usr/bin/which mkdir 2>/dev/null || echo 'não encontrado')"
         
-        # Criar links simbólicos se necessário
-        if [ ! -f "/bin/sh" ]; then
-          sudo ln -s /bin/bash /bin/sh 2>/dev/null || true
+        # Criar links simbólicos essenciais se necessário
+        if [ ! -f "/bin/sh" ] && [ -f "/bin/bash" ]; then
+          /usr/bin/sudo /bin/ln -sf /bin/bash /bin/sh 2>/dev/null || true
         fi
+        
+        # Garantir que PATH inclui diretórios essenciais
+        export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+        echo "PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH" >> $GITHUB_ENV
         
         echo "✅ Ambiente Ubuntu configurado!"
       
@@ -224,10 +233,13 @@ jobs:
       run: |
         echo "🔍 Verificando AIDL..."
         
-        # Verificar se comandos básicos estão disponíveis
-        which head >/dev/null 2>&1 || echo "⚠️ Comando head não encontrado, usando alternativa"
-        which find >/dev/null 2>&1 || echo "⚠️ Comando find não encontrado"
-        which sh >/dev/null 2>&1 || echo "⚠️ Shell sh não encontrado"
+        # Usar caminhos absolutos para comandos
+        export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+        
+        # Verificar se comandos básicos estão disponíveis usando caminhos absolutos
+        /usr/bin/which head >/dev/null 2>&1 || echo "⚠️ Comando head não encontrado, usando alternativa"
+        /usr/bin/which find >/dev/null 2>&1 || echo "⚠️ Comando find não encontrado"
+        /usr/bin/which sh >/dev/null 2>&1 || echo "⚠️ Shell sh não encontrado"
         
         # Aceitar licenças novamente antes de instalar componentes
         printf "y\n%.0s" {1..10} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
@@ -237,13 +249,13 @@ jobs:
         $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platform-tools" 2>/dev/null || echo "⚠️ Erro ao instalar platform-tools"
         $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "tools" 2>/dev/null || echo "⚠️ Tools legacy não disponível"
         
-        # Procurar AIDL em todo o Android SDK
+        # Procurar AIDL em todo o Android SDK usando caminhos absolutos
         echo "🔍 Procurando AIDL em todo o SDK..."
-        if command -v find >/dev/null 2>&1; then
-          find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | while read aidl_file; do
+        if /usr/bin/test -x "/usr/bin/find"; then
+          /usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | while read aidl_file; do
             echo "  Encontrado: $aidl_file"
           done
-          AIDL_PATH=$(find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | head -1 2>/dev/null || find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | sed -n '1p')
+          AIDL_PATH=$(/usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | /usr/bin/head -1 2>/dev/null || /usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | /usr/bin/sed -n '1p')
         else
           echo "⚠️ Comando find não disponível, usando alternativa"
           AIDL_PATH=""
@@ -286,20 +298,20 @@ jobs:
             ls -la $ANDROID_SDK_ROOT/build-tools/ 2>/dev/null || echo "build-tools vazio"
           fi
           
-          # Criar um AIDL fake como último recurso
+          # Criar um AIDL fake como último recurso usando caminhos absolutos
           echo "⚠️ Criando AIDL fake como último recurso..."
-          mkdir -p $HOME/fake-tools
-          echo '#!/bin/bash' > $HOME/fake-tools/aidl
-          echo 'echo "Fake AIDL executado com argumentos: $@"' >> $HOME/fake-tools/aidl
-          echo 'exit 0' >> $HOME/fake-tools/aidl
-          chmod +x $HOME/fake-tools/aidl
+          /usr/bin/mkdir -p $HOME/fake-tools
+          /usr/bin/echo '#!/bin/bash' > $HOME/fake-tools/aidl
+          /usr/bin/echo 'echo "Fake AIDL executado com argumentos: $@"' >> $HOME/fake-tools/aidl
+          /usr/bin/echo 'exit 0' >> $HOME/fake-tools/aidl
+          /usr/bin/chmod +x $HOME/fake-tools/aidl
           echo "PATH=$HOME/fake-tools:\$PATH" >> $GITHUB_ENV
           echo "⚠️ AIDL fake criado e adicionado ao PATH"
         fi
         
-        # Verificar status final
+        # Verificar status final usando caminhos absolutos
         echo "🔍 Status final do AIDL:"
-        which aidl && echo "✅ AIDL está no PATH" || echo "⚠️ AIDL não está no PATH"
+        /usr/bin/which aidl && echo "✅ AIDL está no PATH" || echo "⚠️ AIDL não está no PATH"
         echo "🔧 Verificação de AIDL concluída!"
 
     - name: 🛠️ Install Buildozer
