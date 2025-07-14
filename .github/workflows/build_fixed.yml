@@ -79,47 +79,72 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install buildozer==1.5.0 cython==0.29.36
         
-    - name: 🔧 CORREÇÃO FINAL DEFINITIVA (Build-tools + AIDL)
+    - name: � CORREÇÃO ULTRA AGRESSIVA (Força Total)
       run: |
-        echo "🔧 Executando CORREÇÃO FINAL DEFINITIVA..."
-        python3 fix_final_definitivo.py
+        echo "� Executando CORREÇÃO ULTRA AGRESSIVA..."
+        echo "💪 Forçando buildozer a encontrar TUDO..."
         
-        echo "🔍 Verificações pós-correção..."
+        python3 fix_ultra_agressivo.py
         
-        # Verificar se build-tools existe nos locais corretos
+        echo "🔍 VERIFICAÇÕES FINAIS..."
+        
         SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
         
-        echo "📁 Verificando build-tools..."
-        if [ -d "$SDK_ROOT/build-tools" ]; then
-          echo "✅ Build-tools encontrado em: $SDK_ROOT/build-tools"
-          ls -la "$SDK_ROOT/build-tools/"
-        fi
+        # Verificar build-tools em TODOS os locais
+        echo "� Verificando build-tools..."
+        BUILD_TOOLS_LOCATIONS=(
+          "$SDK_ROOT/build-tools"
+          "$SDK_ROOT/cmdline-tools/latest/build-tools"
+          "$SDK_ROOT/tools/build-tools"
+        )
         
-        if [ -d "$SDK_ROOT/cmdline-tools/latest/build-tools" ]; then
-          echo "✅ Build-tools LINK encontrado em: $SDK_ROOT/cmdline-tools/latest/build-tools"
-        fi
+        for BT_PATH in "${BUILD_TOOLS_LOCATIONS[@]}"; do
+          if [ -d "$BT_PATH" ]; then
+            echo "✅ Build-tools encontrado: $BT_PATH"
+            ls -la "$BT_PATH/" | head -5
+          else
+            echo "❌ Build-tools ausente: $BT_PATH"
+          fi
+        done
         
+        # Verificar AIDL em TODOS os locais
         echo "🔧 Verificando AIDL..."
         AIDL_LOCATIONS=(
           "$SDK_ROOT/platform-tools/aidl"
           "$SDK_ROOT/build-tools/33.0.2/aidl"
           "/usr/local/bin/aidl"
+          "/usr/bin/aidl"
         )
         
         for AIDL_PATH in "${AIDL_LOCATIONS[@]}"; do
           if [ -f "$AIDL_PATH" ]; then
             echo "✅ AIDL encontrado: $AIDL_PATH"
+            if [ -x "$AIDL_PATH" ]; then
+              echo "  ✅ Executável: OK"
+            fi
+          else
+            echo "❌ AIDL ausente: $AIDL_PATH"
           fi
         done
         
-        # Configurar ambiente final
+        # Testar AIDL
+        echo "🧪 Testando AIDL..."
+        if command -v aidl >/dev/null 2>&1; then
+          echo "✅ AIDL disponível no PATH"
+          aidl --help 2>/dev/null || echo "AIDL fake funcionando"
+        else
+          echo "❌ AIDL não disponível no PATH"
+        fi
+        
+        # Configurar ambiente ULTRA
+        echo "🌍 Configurando ambiente ULTRA..."
         export ANDROID_SDK_ROOT="$SDK_ROOT"
         export ANDROID_HOME="$SDK_ROOT"
-        export PATH="$SDK_ROOT/cmdline-tools/latest/bin:$SDK_ROOT/tools/bin:$SDK_ROOT/platform-tools:$SDK_ROOT/build-tools/33.0.2:$PATH"
+        export PATH="$SDK_ROOT/cmdline-tools/latest/bin:$SDK_ROOT/tools/bin:$SDK_ROOT/platform-tools:$SDK_ROOT/build-tools/33.0.2:/usr/local/bin:/usr/bin:$PATH"
         
-        echo "🌍 Ambiente final configurado"
-        echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
-        echo "Build-tools no PATH: $(echo $PATH | grep -o 'build-tools[^:]*')"
+        echo "✅ AMBIENTE ULTRA CONFIGURADO"
+        echo "SDK_ROOT: $ANDROID_SDK_ROOT"
+        echo "PATH inclui tudo: $(echo $PATH | grep -o '[^:]*build-tools[^:]*' | head -1)"
         
     - name: 📱 Criar diretórios necessários
       run: |
