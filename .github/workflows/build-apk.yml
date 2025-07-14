@@ -107,36 +107,48 @@ jobs:
       run: |
         echo "🛠️ Instalando build-tools..."
         
-        # Aceitar licenças novamente antes de instalar
-        printf "y\n%.0s" {1..50} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+        # Aceitar licenças mais agressivamente
+        echo "🔐 Forçando aceitação de licenças..."
+        mkdir -p $ANDROID_SDK_ROOT/licenses
         
-        # Instalar APENAS versões estáveis (NÃO instalar 36.0.0)
+        # Todas as licenças conhecidas (método mais direto)
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
+        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+        echo "84831b9409646a918e30573bab4c9c91346d8abd" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+        echo "504667f4c0de7af1a06de9f4b1727b84351f2910" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+        
+        # Aceitar via múltiplos métodos
+        yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+        printf "y\n%.0s" {1..100} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+        
+        # Instalar APENAS versões estáveis e testadas
         echo "📦 Instalando build-tools estáveis..."
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" || echo "⚠️ Erro ao instalar 33.0.2"
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" || echo "⚠️ Erro ao instalar 34.0.0"
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.1" || echo "⚠️ Erro ao instalar 33.0.1"
         
-        # EVITAR build-tools 36.0.0 que está causando problemas de licença
-        echo "⚠️ Evitando build-tools;36.0.0 devido a problemas de licença"
+        # Forçar instalação com múltiplas tentativas
+        for version in "33.0.2" "34.0.0" "33.0.1" "35.0.0"; do
+          echo "🔄 Tentando instalar build-tools;$version..."
+          printf "y\n%.0s" {1..50} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;$version" 2>/dev/null || true
+        done
         
-        # Instalar platform-tools (contém ferramentas essenciais)
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platform-tools" || echo "⚠️ Erro ao instalar platform-tools"
+        # Instalar platform-tools
+        echo "📦 Instalando platform-tools..."
+        printf "y\n%.0s" {1..50} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platform-tools" 2>/dev/null || true
         
         # Instalar plataforma Android API 33
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" || echo "⚠️ Erro ao instalar platform 33"
+        echo "📦 Instalando platforms;android-33..."
+        printf "y\n%.0s" {1..50} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" 2>/dev/null || true
         
         # Verificar o que foi instalado
-        echo "🔍 Build-tools instaladas:"
+        echo "🔍 Verificando instalações:"
         ls -la $ANDROID_SDK_ROOT/build-tools/ 2>/dev/null || echo "Build-tools não encontrado"
-        
-        echo "🔍 Platform-tools instaladas:"
         ls -la $ANDROID_SDK_ROOT/platform-tools/ 2>/dev/null || echo "Platform-tools não encontrado"
         
         # Procurar AIDL em build-tools
-        echo "🔍 Procurando AIDL em build-tools:"
+        echo "🔍 Procurando AIDL:"
         find $ANDROID_SDK_ROOT/build-tools -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado em build-tools"
         
-        # Adicionar ao PATH a versão mais recente das build-tools
+        # Configurar PATH para a versão mais recente
         if [ -d "$ANDROID_SDK_ROOT/build-tools" ]; then
           LATEST_BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools/ | sort -V | tail -1)
           echo "🎯 Usando build-tools: $LATEST_BUILD_TOOLS"
@@ -144,7 +156,7 @@ jobs:
           echo "✅ Build-tools $LATEST_BUILD_TOOLS adicionadas ao PATH"
         fi
         
-        # Adicionar platform-tools ao PATH também
+        # Adicionar platform-tools ao PATH
         if [ -d "$ANDROID_SDK_ROOT/platform-tools" ]; then
           echo "PATH=$ANDROID_SDK_ROOT/platform-tools:$PATH" >> $GITHUB_ENV
           echo "✅ Platform-tools adicionadas ao PATH"
@@ -156,15 +168,35 @@ jobs:
       run: |
         echo "🔍 Configurando AIDL e corrigindo Buildozer..."
         
-        # Procurar AIDL em todas as build-tools
-        echo "🔍 Procurando AIDL nas build-tools:"
-        find $ANDROID_SDK_ROOT/build-tools -name "aidl" -type f 2>/dev/null || echo "Procurando AIDL..."
+        # Verificar se AIDL está disponível
+        echo "🔍 Procurando AIDL em todas as build-tools:"
+        find $ANDROID_SDK_ROOT/build-tools -name "aidl" -type f 2>/dev/null || echo "Nenhum AIDL encontrado ainda"
+        
+        # Se não encontrou AIDL, instalar uma versão mais antiga que sabemos que funciona
+        if ! find $ANDROID_SDK_ROOT/build-tools -name "aidl" -type f 2>/dev/null | grep -q aidl; then
+          echo "⚠️ AIDL não encontrado, instalando versão mais antiga..."
+          printf "y\n%.0s" {1..50} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;30.0.3" 2>/dev/null || true
+          printf "y\n%.0s" {1..50} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;31.0.0" 2>/dev/null || true
+        fi
+        
+        # Procurar AIDL novamente
+        echo "🔍 Procurando AIDL após instalação:"
+        AIDL_PATH=$(find $ANDROID_SDK_ROOT/build-tools -name "aidl" -type f 2>/dev/null | head -1)
+        
+        if [ -n "$AIDL_PATH" ]; then
+          echo "✅ AIDL encontrado em: $AIDL_PATH"
+          AIDL_DIR=$(dirname "$AIDL_PATH")
+          echo "PATH=$AIDL_DIR:$PATH" >> $GITHUB_ENV
+          echo "✅ AIDL adicionado ao PATH"
+        else
+          echo "⚠️ AIDL ainda não encontrado, continuando..."
+        fi
         
         # Configurar PATH para build-tools com AIDL
         if [ -d "$ANDROID_SDK_ROOT/build-tools" ]; then
           for bt_version in $(ls $ANDROID_SDK_ROOT/build-tools/ | sort -V -r); do
             if [ -f "$ANDROID_SDK_ROOT/build-tools/$bt_version/aidl" ]; then
-              echo "✅ AIDL encontrado em: $bt_version"
+              echo "✅ AIDL encontrado em build-tools: $bt_version"
               echo "PATH=$ANDROID_SDK_ROOT/build-tools/$bt_version:$PATH" >> $GITHUB_ENV
               
               # Criar link simbólico para buildozer encontrar
@@ -174,19 +206,18 @@ jobs:
           done
         fi
         
-        # Criar diretório build-tools se buildozer esperar em local específico
+        # Copiar build-tools para o diretório do buildozer
+        echo "🔄 Copiando build-tools para buildozer..."
         mkdir -p ~/.buildozer/android/platform/android-sdk/build-tools
-        
-        # Se AIDL foi encontrado, criar links para buildozer
         if [ -d "$ANDROID_SDK_ROOT/build-tools" ]; then
-          # Copiar todas as build-tools para onde buildozer espera
           cp -r $ANDROID_SDK_ROOT/build-tools/* ~/.buildozer/android/platform/android-sdk/build-tools/ 2>/dev/null || true
-          
-          echo "🔍 Verificando se AIDL está acessível para buildozer:"
-          find ~/.buildozer/android/platform/android-sdk/build-tools -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado no local do buildozer"
         fi
         
-        # Verificar se AIDL está no PATH
+        # Verificar se AIDL está acessível para buildozer
+        echo "🔍 Verificando AIDL para buildozer:"
+        find ~/.buildozer/android/platform/android-sdk/build-tools -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado no local do buildozer"
+        
+        # Teste final do AIDL
         echo "🔍 Teste final do AIDL:"
         which aidl && echo "✅ AIDL disponível no PATH" || echo "⚠️ AIDL não encontrado no PATH"
         
@@ -218,9 +249,9 @@ jobs:
         # Criar backup e configurar
         cp buildozer.spec buildozer.spec.backup
         
-        # Adicionar configurações automáticas
+        # Configurações críticas para evitar problemas de licença
         echo "" >> buildozer.spec
-        echo "# Configurações GitHub Actions" >> buildozer.spec
+        echo "# Configurações GitHub Actions - Forçar versões específicas" >> buildozer.spec
         echo "android.build_tools = 33.0.2" >> buildozer.spec
         echo "android.api = 33" >> buildozer.spec
         echo "android.minapi = 21" >> buildozer.spec
@@ -229,6 +260,10 @@ jobs:
         # Configurações específicas para resolver problemas do AIDL
         echo "android.sdk_path = $ANDROID_SDK_ROOT" >> buildozer.spec
         echo "android.ndk_path = $ANDROID_NDK_ROOT" >> buildozer.spec
+        
+        # FORÇAR buildozer a usar SDK existente (não baixar novamente)
+        echo "android.skip_update = True" >> buildozer.spec
+        echo "android.accept_sdk_license = True" >> buildozer.spec
         
         # Configurar git
         git config --global user.email "action@github.com"
@@ -239,21 +274,28 @@ jobs:
         mkdir -p ~/.local/share/python-for-android
         mkdir -p ~/.buildozer/android/platform/android-sdk
         
+        # Copiar SDK inteiro para onde buildozer espera
+        echo "🔄 Copiando SDK para buildozer..."
+        cp -r $ANDROID_SDK_ROOT/* ~/.buildozer/android/platform/android-sdk/ 2>/dev/null || true
+        
         # Criar links simbólicos para SDK
         ln -sf $ANDROID_SDK_ROOT ~/.buildozer/android/platform/android-sdk/android-sdk 2>/dev/null || true
         ln -sf $ANDROID_NDK_ROOT ~/.buildozer/android/platform/android-ndk 2>/dev/null || true
         
-        # Configurar variáveis de ambiente
+        # Configurar variáveis de ambiente para buildozer
         echo "ANDROIDSDK=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
         echo "ANDROIDNDK=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
         echo "ANDROIDAPI=33" >> $GITHUB_ENV
         echo "ANDROIDMINAPI=21" >> $GITHUB_ENV
-        
-        # Configurações específicas para resolver problemas de build-tools
         echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
         echo "ANDROID_SDK_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
         
-        echo "✅ Buildozer configurado!"
+        # Verificar estrutura final
+        echo "🔍 Verificando estrutura buildozer:"
+        ls -la ~/.buildozer/android/platform/android-sdk/build-tools/ 2>/dev/null || echo "Build-tools não copiadas"
+        find ~/.buildozer/android/platform/android-sdk/build-tools -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado"
+        
+        echo "✅ Buildozer configurado com SDK pré-instalado!"
         
     - name: 📋 Show Build Info
       run: |
