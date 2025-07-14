@@ -74,10 +74,10 @@ android.service_main_class = org.kivy.android.PythonService
 android.theme = "@android:style/Theme.NoTitleBar"
 
 # (str) Path to a custom command-line tools directory
-android.sdk_path = 
+android.sdk_path = /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest
 
 # (str) Path to Android SDK directory
-android.sdk_dir = 
+android.sdk_dir = /home/runner/.buildozer/android/platform/android-sdk
 
 # (str) Android SDK auto-accept licenses
 android.auto_accept_licenses = True

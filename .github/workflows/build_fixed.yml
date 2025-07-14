@@ -79,10 +79,34 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install buildozer==1.5.0 cython==0.29.36
         
-    - name: 🔧 Corrigir SDK Manager
+    - name: 🔧 Corrigir SDK Manager (SUPER ROBUSTO)
       run: |
-        echo "🔧 Executando correção do SDK Manager..."
-        python3 fix_github_actions_sdk.py
+        echo "🔧 Executando correção SUPER ROBUSTA do SDK Manager..."
+        python3 fix_sdk_super_robusto.py
+        
+        echo "🔍 Verificando se SDK Manager foi corrigido..."
+        SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+        
+        # Verificar ambos os locais
+        NEW_SDK="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+        OLD_SDK="$SDK_ROOT/tools/bin/sdkmanager"
+        
+        if [ -f "$NEW_SDK" ]; then
+          echo "✅ SDK Manager (NOVO) encontrado: $NEW_SDK"
+        fi
+        
+        if [ -f "$OLD_SDK" ]; then
+          echo "✅ SDK Manager (ANTIGO) encontrado: $OLD_SDK"
+        fi
+        
+        # Configurar ambiente
+        export ANDROID_SDK_ROOT="$SDK_ROOT"
+        export ANDROID_HOME="$SDK_ROOT"
+        export PATH="$SDK_ROOT/cmdline-tools/latest/bin:$SDK_ROOT/tools/bin:$SDK_ROOT/platform-tools:$PATH"
+        
+        echo "🌍 Ambiente configurado:"
+        echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
+        echo "PATH inclui SDK: OK"
         
     - name: 📱 Criar diretórios necessários
       run: |
