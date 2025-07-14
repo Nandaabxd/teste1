@@ -79,15 +79,17 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install buildozer==1.5.0 cython==0.29.36
         
-    - name: 🔧 CORREÇÃO FINAL ABSOLUTA
+    - name: 🔧 CORREÇÃO SUPER ROBUSTA
       run: |
-        echo "🔧 Executando CORREÇÃO FINAL ABSOLUTA..."
-        echo "🎯 Resolvendo problemas específicos:"
-        echo "  1. build-tools;36.0.0 license error"
-        echo "  2. AIDL not found"
-        echo "  3. build-tools folder not found"
+        echo "🔧 Executando CORREÇÃO SUPER ROBUSTA..."
+        echo "🎯 Garantindo que TUDO funcione:"
+        echo "  1. SDK existe e está configurado"
+        echo "  2. Licenças à prova de balas"
+        echo "  3. APENAS componentes compatíveis"
+        echo "  4. Build-tools no local EXATO"
+        echo "  5. AIDL super funcional"
         
-        python3 fix_build_final.py
+        python3 fix_super_robusto.py
         
         echo "🔍 VERIFICAÇÃO FINAL..."
         
@@ -140,17 +142,7 @@ jobs:
         mkdir -p ~/.buildozer
         mkdir -p bin
         
-    - name: 🔑 Aceitar licenças do Android SDK
-      run: |
-        echo "🔑 Aceitando licenças do Android SDK..."
-        export ANDROID_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
-        export ANDROID_HOME="$ANDROID_SDK_ROOT"
-        export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
-        
-        # Aceitar licenças
-        yes | sdkmanager --licenses || true
-        
-    - name: 🚀 Compilar APK
+    - name:  Compilar APK
       run: |
         echo "🚀 Iniciando compilação do APK..."
         
