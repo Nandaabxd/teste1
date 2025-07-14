@@ -279,29 +279,6 @@ jobs:
         mkdir -p ~/.buildozer/cache
         mkdir -p ~/.local/share/python-for-android
         
-        # FORÇAR buildozer a usar o SDK que preparamos
-        echo "🔄 Configurando buildozer para usar SDK pré-instalado..."
-        
-        # Remover qualquer SDK antigo do buildozer
-        rm -rf ~/.buildozer/android/platform/android-sdk 2>/dev/null || true
-        
-        # Criar link simbólico direto para o SDK correto
-        mkdir -p ~/.buildozer/android/platform/
-        ln -sf $ANDROID_SDK_ROOT ~/.buildozer/android/platform/android-sdk
-        
-        # Verificar se o link foi criado corretamente
-        if [ -L ~/.buildozer/android/platform/android-sdk ]; then
-          echo "✅ Link simbólico criado: ~/.buildozer/android/platform/android-sdk -> $ANDROID_SDK_ROOT"
-          ls -la ~/.buildozer/android/platform/android-sdk/cmdline-tools/
-        else
-          echo "❌ Falha ao criar link simbólico, copiando SDK..."
-          cp -r $ANDROID_SDK_ROOT ~/.buildozer/android/platform/android-sdk/
-        fi
-        
-        # Criar link para NDK
-        rm -rf ~/.buildozer/android/platform/android-ndk 2>/dev/null || true
-        ln -sf $ANDROID_NDK_ROOT ~/.buildozer/android/platform/android-ndk
-        
         # Configurar variáveis de ambiente para buildozer
         echo "ANDROIDSDK=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
         echo "ANDROIDNDK=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
@@ -313,13 +290,7 @@ jobs:
         # Configurar variáveis específicas para Java 17 compatibility
         echo "SKIP_JDK_VERSION_CHECK=true" >> $GITHUB_ENV
         
-        # Verificar estrutura final
-        echo "🔍 Verificando estrutura buildozer:"
-        ls -la ~/.buildozer/android/platform/android-sdk/cmdline-tools/ 2>/dev/null || echo "Cmdline-tools não encontrado"
-        ls -la ~/.buildozer/android/platform/android-sdk/build-tools/ 2>/dev/null || echo "Build-tools não encontrado"
-        find ~/.buildozer/android/platform/android-sdk/build-tools -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado"
-        
-        echo "✅ Buildozer configurado para usar SDK pré-instalado!"
+        echo "✅ Buildozer configurado!"
         
     - name: 📋 Show Build Info
       run: |
@@ -356,8 +327,38 @@ jobs:
         echo "🔍 Verificando Java antes da compilação:"
         java -version
         
+        # Função para corrigir SDK durante buildozer
+        fix_buildozer_sdk() {
+          while true; do
+            if [ -d ~/.buildozer/android/platform/android-sdk/tools ]; then
+              echo "🔄 Buildozer baixou SDK antigo, substituindo..."
+              
+              # Parar processos que possam estar usando o SDK
+              pkill -f sdkmanager 2>/dev/null || true
+              sleep 2
+              
+              # Backup do SDK antigo
+              mv ~/.buildozer/android/platform/android-sdk ~/.buildozer/android/platform/android-sdk-old 2>/dev/null || true
+              
+              # Copiar nosso SDK moderno
+              cp -r $ANDROID_SDK_ROOT ~/.buildozer/android/platform/android-sdk
+              
+              echo "✅ SDK substituído por versão moderna!"
+              break
+            fi
+            sleep 1
+          done
+        }
+        
+        # Executar correção em background
+        fix_buildozer_sdk &
+        FIXER_PID=$!
+        
         # Compilar APK com verbose para debug
         buildozer android debug --verbose
+        
+        # Parar processo de correção
+        kill $FIXER_PID 2>/dev/null || true
       env:
         SKIP_JDK_VERSION_CHECK: true
         
