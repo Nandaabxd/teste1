@@ -32,11 +32,25 @@
 - Configuração automática de variáveis de ambiente
 - Detecção automática do NDK
 
+### 5. 🐚 **Comandos Shell Missing**
+**Problema**: Comandos `head`, `sh` não disponíveis no GitHub Actions  
+**Solução**:
+- Substituir `head -N` por `sed -n '1,Np'`
+- Remover pacote Python `sh` problemático
+- Usar apenas comandos bash/shell nativos
+- Instalar `coreutils` para garantir comandos básicos
+
 ## 🎯 **Principais Melhorias**
 
 ### ✅ **Evitar Componentes Problemáticos**
 - **NÃO instalar** build-tools;36.0.0 (licença problemática)
+- **NÃO usar** pacote Python `sh` (problemas no GitHub Actions)
 - Usar versões estáveis e testadas (33.x, 34.x, 32.x)
+
+### ✅ **Comandos Shell Compatíveis**
+- Substituir `head` por `sed` para compatibilidade
+- Usar apenas comandos bash/shell nativos
+- Instalar `coreutils` como dependência
 
 ### ✅ **Múltiplos Métodos de Backup**
 - 3 métodos diferentes para aceitar licenças
@@ -75,7 +89,24 @@ ls $ANDROID_SDK_ROOT/build-tools/
 
 # Verificar licenças aceitas
 ls $ANDROID_SDK_ROOT/licenses/
+
+# Testar comandos de compatibilidade
+echo "teste" | sed -n '1p'  # Ao invés de head -1
+ls | sed -n '1,5p'         # Ao invés de head -5
 ```
+
+## 🔄 **Últimas Correções (Hoje)**
+
+### ❌ **Problemas Encontrados:**
+1. `head: command not found` - Comando não disponível no GitHub Actions
+2. `/usr/bin/env: 'sh': No such file or directory` - Pacote Python `sh` problemático
+3. Scripts falhando por dependências ausentes
+
+### ✅ **Soluções Aplicadas:**
+1. **Substituir `head` por `sed`**: Todos os `head -N` foram substituídos por `sed -n '1,Np'`
+2. **Remover pacote `sh`**: Comentado `pip install sh` que causava problemas
+3. **Adicionar `coreutils`**: Garantir comandos básicos disponíveis
+4. **Usar comandos nativos**: Apenas bash/shell built-ins
 
 ## 🎉 **Próximos Passos**
 

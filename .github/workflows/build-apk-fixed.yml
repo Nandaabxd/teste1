@@ -57,38 +57,13 @@ jobs:
           libssl-dev \
           ccache \
           unzip \
-          zip \
-          coreutils
+          zip
           
     - name: 📱 Install Android SDK
-      run: |
-        echo "📱 Configurando Android SDK..."
-        
-        # Usar o SDK que já está instalado no GitHub Actions
-        if [ -z "$ANDROID_SDK_ROOT" ]; then
-          export ANDROID_SDK_ROOT=$ANDROID_HOME
-        fi
-        
-        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-        echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-        
-        # Definir NDK Root
-        if [ -z "$ANDROID_NDK_ROOT" ]; then
-          export ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk-bundle
-          if [ ! -d "$ANDROID_NDK_ROOT" ]; then
-            # Procurar NDK em outras localizações
-            NDK_DIR=$(find $ANDROID_SDK_ROOT -name "ndk" -type d 2>/dev/null | sed -n '1p')
-            if [ -n "$NDK_DIR" ]; then
-              ANDROID_NDK_ROOT=$(find $NDK_DIR -maxdepth 1 -type d | grep -E '[0-9]+\.[0-9]+' | sed -n '1p')
-            fi
-          fi
-        fi
-        
-        echo "ANDROID_NDK_ROOT=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
-        
-        echo "✅ Android SDK configurado:"
-        echo "  SDK: $ANDROID_SDK_ROOT"
-        echo "  NDK: $ANDROID_NDK_ROOT"
+      uses: android-actions/setup-android@v3
+      with:
+        api-level: 33
+        ndk-version: '25.2.9519653'
         
     - name: 🔐 Accept Android SDK Licenses
       run: |
@@ -146,7 +121,7 @@ jobs:
         
         # Listar versões disponíveis
         echo "📋 Versões de build-tools disponíveis:"
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | grep "build-tools" | sed -n '1,10p'
+        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | grep "build-tools" | head -10
         
         # Instalar apenas versões estáveis e disponíveis (NÃO instalar 36.0.0)
         echo "📦 Instalando build-tools versão 33 (estável)..."
@@ -226,7 +201,7 @@ jobs:
           echo "  Encontrado: $aidl_file"
         done
         
-        AIDL_PATH=$(find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | sed -n '1p')
+        AIDL_PATH=$(find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | head -1)
         
         if [ -n "$AIDL_PATH" ]; then
           echo "✅ AIDL encontrado: $AIDL_PATH"
@@ -259,14 +234,16 @@ jobs:
           ls -la $ANDROID_SDK_ROOT/platform-tools/ 2>/dev/null || echo "platform-tools não existe"
           
           echo "🔍 Conteúdo de build-tools:"
-          find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | sed -n '1,20p' || echo "build-tools vazio"
+          find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | head -20 || echo "build-tools vazio"
           
           # Criar um AIDL fake como último recurso
           echo "⚠️ Criando AIDL fake como último recurso..."
           mkdir -p $HOME/fake-tools
-          echo '#!/bin/bash' > $HOME/fake-tools/aidl
-          echo 'echo "Fake AIDL executado com argumentos: $@"' >> $HOME/fake-tools/aidl
-          echo 'exit 0' >> $HOME/fake-tools/aidl
+          cat > $HOME/fake-tools/aidl << 'EOF'
+#!/bin/bash
+echo "Fake AIDL executado com argumentos: $@"
+exit 0
+EOF
           chmod +x $HOME/fake-tools/aidl
           echo "PATH=$HOME/fake-tools:\$PATH" >> $GITHUB_ENV
           echo "⚠️ AIDL fake criado e adicionado ao PATH"
@@ -285,7 +262,7 @@ jobs:
         pip install cython==0.29.33
         pip install colorama
         pip install appdirs
-        # pip install sh  # Removido - causa problemas no GitHub Actions
+        pip install sh
         pip install pexpect
         
     - name: 🔧 Fix Buildozer Issues
@@ -403,7 +380,7 @@ jobs:
         # Debug info antes do build
         echo "🔍 Debug info:"
         ls -la
-        cat buildozer.spec | sed -n '1,20p'
+        cat buildozer.spec | head -20
         
         # Compilar APK com debug verbose
         buildozer android debug --verbose
@@ -418,7 +395,7 @@ jobs:
         
         if [ -d "bin" ] && [ -n "$(ls -A bin/*.apk 2>/dev/null)" ]; then
           echo "✅ APK gerado com sucesso!"
-          APK_FILE=$(ls bin/*.apk | sed -n '1p')
+          APK_FILE=$(ls bin/*.apk | head -1)
           echo "📱 Arquivo: $APK_FILE"
           echo "📊 Tamanho: $(du -h $APK_FILE | cut -f1)"
           
