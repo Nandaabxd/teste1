@@ -14,7 +14,39 @@ jobs:
     - name: 📥 Checkout Repository
       uses: actions/checkout@v4
       
-    - name: 🐍 Setup Python
+    - name: � Fix Ubuntu Environment
+      run: |
+        echo "🔧 Configurando ambiente Ubuntu..."
+        # Instalar utilitários básicos essenciais primeiro
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq \
+          coreutils \
+          findutils \
+          util-linux \
+          bash \
+          dash \
+          grep \
+          sed \
+          gawk \
+          which \
+          curl \
+          wget
+        
+        # Verificar se comandos básicos funcionam
+        echo "✅ Testando comandos básicos:"
+        echo "head: $(which head || echo 'não encontrado')"
+        echo "find: $(which find || echo 'não encontrado')"
+        echo "grep: $(which grep || echo 'não encontrado')"
+        echo "sh: $(which sh || echo 'não encontrado')"
+        
+        # Criar links simbólicos se necessário
+        if [ ! -f "/bin/sh" ]; then
+          sudo ln -s /bin/bash /bin/sh 2>/dev/null || true
+        fi
+        
+        echo "✅ Ambiente Ubuntu configurado!"
+      
+    - name: �🐍 Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
@@ -57,7 +89,12 @@ jobs:
           libssl-dev \
           ccache \
           unzip \
-          zip
+          zip \
+          coreutils \
+          bash \
+          dash \
+          findutils \
+          util-linux
           
     - name: 📱 Install Android SDK
       uses: android-actions/setup-android@v3
@@ -121,7 +158,7 @@ jobs:
         
         # Listar versões disponíveis
         echo "📋 Versões de build-tools disponíveis:"
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | grep "build-tools" | head -10
+        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | grep "build-tools" | head -10 2>/dev/null || $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | grep "build-tools" | sed -n '1,10p' 2>/dev/null || echo "Erro ao listar build-tools"
         
         # Instalar apenas versões estáveis e disponíveis (NÃO instalar 36.0.0)
         echo "📦 Instalando build-tools versão 33 (estável)..."
@@ -187,21 +224,30 @@ jobs:
       run: |
         echo "🔍 Verificando AIDL..."
         
+        # Verificar se comandos básicos estão disponíveis
+        which head >/dev/null 2>&1 || echo "⚠️ Comando head não encontrado, usando alternativa"
+        which find >/dev/null 2>&1 || echo "⚠️ Comando find não encontrado"
+        which sh >/dev/null 2>&1 || echo "⚠️ Shell sh não encontrado"
+        
         # Aceitar licenças novamente antes de instalar componentes
         printf "y\n%.0s" {1..10} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
         
         # Instalar componentes essenciais que contêm AIDL
         echo "📦 Garantindo instalação de componentes com AIDL..."
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platform-tools" || echo "⚠️ Erro ao instalar platform-tools"
+        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platform-tools" 2>/dev/null || echo "⚠️ Erro ao instalar platform-tools"
         $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "tools" 2>/dev/null || echo "⚠️ Tools legacy não disponível"
         
         # Procurar AIDL em todo o Android SDK
         echo "🔍 Procurando AIDL em todo o SDK..."
-        find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | while read aidl_file; do
-          echo "  Encontrado: $aidl_file"
-        done
-        
-        AIDL_PATH=$(find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | head -1)
+        if command -v find >/dev/null 2>&1; then
+          find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | while read aidl_file; do
+            echo "  Encontrado: $aidl_file"
+          done
+          AIDL_PATH=$(find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | head -1 2>/dev/null || find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | sed -n '1p')
+        else
+          echo "⚠️ Comando find não disponível, usando alternativa"
+          AIDL_PATH=""
+        fi
         
         if [ -n "$AIDL_PATH" ]; then
           echo "✅ AIDL encontrado: $AIDL_PATH"
@@ -233,8 +279,12 @@ jobs:
           echo "🔍 Conteúdo de platform-tools:"
           ls -la $ANDROID_SDK_ROOT/platform-tools/ 2>/dev/null || echo "platform-tools não existe"
           
-          echo "� Conteúdo de build-tools:"
-          find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | head -20 || echo "build-tools vazio"
+          echo "🔍 Conteúdo de build-tools:"
+          if command -v find >/dev/null 2>&1; then
+            find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | head -20 2>/dev/null || find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | sed -n '1,20p' || echo "build-tools vazio"
+          else
+            ls -la $ANDROID_SDK_ROOT/build-tools/ 2>/dev/null || echo "build-tools vazio"
+          fi
           
           # Criar um AIDL fake como último recurso
           echo "⚠️ Criando AIDL fake como último recurso..."
@@ -372,7 +422,7 @@ jobs:
         ls -la
         echo ""
         echo "🔧 buildozer.spec content (first 40 lines):"
-        head -40 buildozer.spec
+        head -40 buildozer.spec 2>/dev/null || sed -n '1,40p' buildozer.spec 2>/dev/null || echo "Erro ao ler buildozer.spec"
         echo ""
         echo "🐍 Python packages installed:"
         pip list | grep -E "(buildozer|cython|pyjnius|kivy)"
@@ -394,7 +444,7 @@ jobs:
         echo ""
         echo "📋 Buildozer version and config:"
         buildozer version
-        buildozer android debug --verbose --dry-run 2>&1 | head -20 || echo "Erro no dry-run"
+        buildozer android debug --verbose --dry-run 2>&1 | head -20 2>/dev/null || buildozer android debug --verbose --dry-run 2>&1 | sed -n '1,20p' 2>/dev/null || echo "Erro no dry-run"
         
     - name: 🏗️ Build APK
       run: |
@@ -406,7 +456,7 @@ jobs:
         # Debug info antes do build
         echo "🔍 Debug info:"
         ls -la
-        cat buildozer.spec | head -20
+        head -20 buildozer.spec 2>/dev/null || sed -n '1,20p' buildozer.spec 2>/dev/null || cat buildozer.spec
         
         # Compilar APK com debug verbose
         buildozer android debug --verbose
@@ -432,7 +482,7 @@ jobs:
           echo "🔍 Verificando logs de erro..."
           if [ -f ".buildozer/logs/buildozer.log" ]; then
             echo "📋 Últimas linhas do log:"
-            tail -50 .buildozer/logs/buildozer.log
+            tail -50 .buildozer/logs/buildozer.log 2>/dev/null || sed -n '$-49,$p' .buildozer/logs/buildozer.log 2>/dev/null || echo "Erro ao ler log"
           fi
           exit 1
         fi
