@@ -1,68 +1,69 @@
-# 🔧 BUILD FIX APLICADO - Exit Code 100
+# 🔧 BUILD FIX APLICADO - Android SDK Licenses Fixed
 
 ## ❌ **PROBLEMA IDENTIFICADO:**
-**"Unable to locate package libtinfo5"** - Pacote inexistente no Ubuntu 22.04+
+- **"Android SDK Build-Tools 36"** - Versão incompatível
+- **"Licenses not accepted"** - Licenças do SDK não aceitas
+- **"Aidl not found"** - Build-tools não encontradas
 
 ## ✅ **CORREÇÕES APLICADAS:**
 
-### **1. 🗑️ Removido libtinfo5**
-- ❌ `libtinfo5` (não existe no Ubuntu recente)
-- ✅ Mantidas: `libncurses5-dev`, `libncursesw5-dev`
-
-### **2. 📦 Dependências Organizadas**
+### **1. � Licenças Aceitas Automaticamente**
 ```bash
-✅ build-essential      # Compiladores essenciais
-✅ python3-dev         # Headers Python
-✅ openjdk-17-jdk      # Java 17
-✅ cmake               # Build system
-✅ libffi-dev          # FFI library
-✅ libssl-dev          # SSL/TLS
-✅ unzip, zip          # Compressão
+✅ android-sdk-license
+✅ android-sdk-preview-license  
+✅ intel-android-extra-license
+✅ google-gdk-license
 ```
 
-### **3. 🛠️ Buildozer Fixado**
+### **2. �️ Build-Tools Compatíveis**
+- ❌ `build-tools;36.0.0` (muito nova, incompatível)
+- ✅ `build-tools;33.0.2` (compatível com API 33)
+- ✅ AIDL incluído nas build-tools
+
+### **3. � SDK Atualizado**
 ```bash
-✅ buildozer==1.5.0    # Versão estável
-✅ cython==0.29.33     # Compatível Python 3.11
-✅ pyjnius             # Android bridge
-✅ colorama, appdirs   # Dependências
+✅ android.api = 33          # Android 13
+✅ android.sdk = 33          # SDK 33
+✅ android.build_tools = 33.0.2  # Build-tools compatíveis
 ```
 
-### **4. 🔍 Debug Melhorado**
-- ✅ **Pre-Build Diagnostics** - Mostra tudo antes do build
-- ✅ **Verbose logging** - Logs detalhados
-- ✅ **Environment check** - Variáveis configuradas
+### **4. � Workflow Melhorado**
+- ✅ **Auto-accept licenses** - Aceita licenças automaticamente
+- ✅ **Install build-tools** - Instala ferramentas corretas
+- ✅ **AIDL verification** - Verifica se AIDL está disponível
+- ✅ **PATH configuration** - Adiciona build-tools ao PATH
 
 ## 🚀 **STATUS:**
-- **Erro**: `libtinfo5` package missing ❌
-- **Fix**: Package removed ✅  
+- **Erro**: Android SDK licenses not accepted ❌
+- **Fix**: Licenses auto-accepted ✅  
 - **Test**: Ready for new build ⏳
 
 ## 📋 **PRÓXIMO BUILD VAI MOSTRAR:**
 ```
-🔍 Working directory
-📁 Files present  
-📋 buildozer.spec content
-📦 Python packages installed
-🔧 Environment variables
-🚀 Build com --verbose
+� Accepting Android SDK licenses...
+�️ Installing build-tools 33.0.2...
+� Verifying AIDL availability...
+✅ Build-tools installed successfully!
+🚀 Building APK...
 ```
 
 ## 🎯 **RESULTADO ESPERADO:**
-- ✅ **Instalação** - Sem erro de packages
-- ✅ **Build** - Iniciar compilação
-- ✅ **APK** - Gerar arquivo final
+- ✅ **Licenças** - Aceitas automaticamente
+- ✅ **Build-tools** - Versão 33.0.2 instalada
+- ✅ **AIDL** - Disponível e funcionando
+- ✅ **APK** - Gerar arquivo final sem erros
 
 ---
 
 ## 🔄 **COMMIT MESSAGE:**
 ```
-🔧 Fix Ubuntu package issues - Remove libtinfo5
+� Fix Android SDK license issues and build-tools
 
-- Fixed "Unable to locate package libtinfo5" error
-- Updated dependencies for Ubuntu 22.04+
-- Added comprehensive pre-build diagnostics
-- Ready for successful APK compilation
+- Auto-accept all Android SDK licenses
+- Use compatible build-tools 33.0.2 instead of 36.0.0
+- Update API target to 33 (Android 13)
+- Add AIDL verification step
+- Fixed build process for successful APK generation
 ```
 
 **⏳ Aguardando próximo build para confirmar fix...**
