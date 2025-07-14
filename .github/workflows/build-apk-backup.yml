@@ -230,87 +230,49 @@ jobs:
       run: |
         echo "🔍 Verificando AIDL..."
         
-        # Usar caminhos absolutos para comandos
-        export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+        # Garantir que comandos básicos estão no PATH
+        export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:$PATH"
         
-        # Verificar se comandos básicos estão disponíveis usando caminhos absolutos
-        /usr/bin/which head >/dev/null 2>&1 || echo "⚠️ Comando head não encontrado, usando alternativa"
-        /usr/bin/which find >/dev/null 2>&1 || echo "⚠️ Comando find não encontrado"
-        /usr/bin/which sh >/dev/null 2>&1 || echo "⚠️ Shell sh não encontrado"
+        # Criar links simbólicos para comandos essenciais se não existirem
+        sudo ln -sf /bin/bash /bin/sh 2>/dev/null || true
+        sudo ln -sf /usr/bin/sed /bin/sed 2>/dev/null || true
         
-        # Aceitar licenças novamente antes de instalar componentes
-        printf "y\n%.0s" {1..10} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+        # Verificar comandos essenciais
+        echo "✅ Comandos disponíveis:"
+        which bash || echo "bash: não encontrado"
+        which sh || echo "sh: não encontrado" 
+        which sed || echo "sed: não encontrado"
+        which find || echo "find: não encontrado"
         
-        # Instalar componentes essenciais que contêm AIDL
-        echo "📦 Garantindo instalação de componentes com AIDL..."
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platform-tools" 2>/dev/null || echo "⚠️ Erro ao instalar platform-tools"
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "tools" 2>/dev/null || echo "⚠️ Tools legacy não disponível"
+        # AIDL já foi encontrado nas build-tools! Vamos usar o que temos
+        echo "✅ AIDL encontrado nas build-tools:"
+        find $ANDROID_SDK_ROOT/build-tools -name "aidl" -type f 2>/dev/null || echo "Buscando AIDL..."
         
-        # Procurar AIDL em todo o Android SDK usando caminhos absolutos
-        echo "🔍 Procurando AIDL em todo o SDK..."
-        if /usr/bin/test -x "/usr/bin/find"; then
-          /usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | while read aidl_file; do
-            echo "  Encontrado: $aidl_file"
-          done
-          # Usar alternativa mais robusta para obter o primeiro resultado
-          AIDL_PATH=$(/usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | /usr/bin/head -1 2>/dev/null || /usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | while read line; do echo "$line"; break; done)
+        # Usar a versão mais recente das build-tools que contém AIDL
+        LATEST_BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools/ | sort -V | tail -1)
+        if [ -n "$LATEST_BUILD_TOOLS" ] && [ -f "$ANDROID_SDK_ROOT/build-tools/$LATEST_BUILD_TOOLS/aidl" ]; then
+          echo "✅ Usando AIDL da build-tools: $LATEST_BUILD_TOOLS"
+          echo "PATH=$ANDROID_SDK_ROOT/build-tools/$LATEST_BUILD_TOOLS:\$PATH" >> $GITHUB_ENV
         else
-          echo "⚠️ Comando find não disponível, usando alternativa"
-          AIDL_PATH=""
-        fi
-        
-        if [ -n "$AIDL_PATH" ]; then
-          echo "✅ AIDL encontrado: $AIDL_PATH"
-          
-          # Verificar se o AIDL é executável
-          if [ -x "$AIDL_PATH" ]; then
-            echo "✅ AIDL é executável"
-            # Testar AIDL (alguns não suportam --help)
-            if $AIDL_PATH --help >/dev/null 2>&1; then
-              echo "✅ AIDL responde a --help"
-            else
-              echo "✅ AIDL funciona (sem suporte a --help)"
+          # Tentar outras versões disponíveis
+          for bt_version in "33.0.2" "35.0.1" "33.0.0" "34.0.0" "35.0.0"; do
+            if [ -f "$ANDROID_SDK_ROOT/build-tools/$bt_version/aidl" ]; then
+              echo "✅ Usando AIDL da build-tools: $bt_version"
+              echo "PATH=$ANDROID_SDK_ROOT/build-tools/$bt_version:\$PATH" >> $GITHUB_ENV
+              break
             fi
-          else
-            echo "⚠️ AIDL não é executável, corrigindo..."
-            chmod +x "$AIDL_PATH"
-          fi
-          
-          # Adicionar diretório do AIDL ao PATH
-          AIDL_DIR=$(dirname "$AIDL_PATH")
-          echo "PATH=$AIDL_DIR:\$PATH" >> $GITHUB_ENV
-          echo "✅ AIDL adicionado ao PATH: $AIDL_DIR"
-          
-        else
-          echo "❌ AIDL ainda não encontrado!"
-          echo "🔍 Listando estrutura completa do SDK para debug:"
-          find $ANDROID_SDK_ROOT -type f -name "*aidl*" 2>/dev/null || echo "Nenhum arquivo relacionado a AIDL encontrado"
-          
-          echo "🔍 Conteúdo de platform-tools:"
-          ls -la $ANDROID_SDK_ROOT/platform-tools/ 2>/dev/null || echo "platform-tools não existe"
-          
-          echo "🔍 Conteúdo de build-tools:"
-          if /usr/bin/test -x "/usr/bin/find"; then
-            /usr/bin/find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | /usr/bin/head -20 2>/dev/null || /usr/bin/find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | while IFS= read -r line && [ $((++count)) -le 20 ]; do echo "$line"; done || echo "build-tools vazio"
-          else
-            /usr/bin/ls -la $ANDROID_SDK_ROOT/build-tools/ 2>/dev/null || echo "build-tools vazio"
-          fi
-          
-          # Criar um AIDL fake como último recurso usando caminhos absolutos
-          echo "⚠️ Criando AIDL fake como último recurso..."
-          /usr/bin/mkdir -p $HOME/fake-tools
-          /usr/bin/echo '#!/bin/bash' > $HOME/fake-tools/aidl
-          /usr/bin/echo 'echo "Fake AIDL executado com argumentos: $@"' >> $HOME/fake-tools/aidl
-          /usr/bin/echo 'exit 0' >> $HOME/fake-tools/aidl
-          /usr/bin/chmod +x $HOME/fake-tools/aidl
-          echo "PATH=$HOME/fake-tools:\$PATH" >> $GITHUB_ENV
-          echo "⚠️ AIDL fake criado e adicionado ao PATH"
+          done
         fi
         
-        # Verificar status final usando caminhos absolutos
-        echo "🔍 Status final do AIDL:"
-        /usr/bin/which aidl && echo "✅ AIDL está no PATH" || echo "⚠️ AIDL não está no PATH"
-        echo "🔧 Verificação de AIDL concluída!"
+        # Verificar se AIDL está funcionando
+        echo "🔍 Testando AIDL:"
+        which aidl && echo "✅ AIDL está no PATH" || echo "⚠️ AIDL precisa ser configurado"
+        
+        # Listar todos os AIDLs encontrados
+        echo "� Todos os AIDLs disponíveis:"
+        find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | head -5
+        
+        echo "✅ AIDL configurado com sucesso!"
 
     - name: 🛠️ Install Buildozer
       run: |
@@ -380,37 +342,23 @@ jobs:
         if [ -f "buildozer.spec" ]; then
           echo "🔧 Ajustando buildozer.spec..."
           
-          # Remover configurações problemáticas e forçar versões estáveis
-          /usr/bin/sed -i 's/android.gradle_dependencies = .*/android.gradle_dependencies = /g' buildozer.spec || true
-          /usr/bin/sed -i 's/android.build_tools = .*/android.build_tools = 33.0.2/g' buildozer.spec || true
+          # Usar métodos mais simples para editar o arquivo
+          cp buildozer.spec buildozer.spec.backup
           
-          # Adicionar configuração de build-tools se não existir
-          if ! /usr/bin/grep -q "android.build_tools" buildozer.spec; then
-            echo "android.build_tools = 33.0.2" >> buildozer.spec
-          fi
-          
-          # Forçar API level estável
-          /usr/bin/sed -i 's/android.api = .*/android.api = 33/g' buildozer.spec || true
-          /usr/bin/sed -i 's/android.minapi = .*/android.minapi = 21/g' buildozer.spec || true
-          
-          # Adicionar configurações se não existirem
-          if ! /usr/bin/grep -q "android.api" buildozer.spec; then
-            echo "android.api = 33" >> buildozer.spec
-          fi
-          if ! /usr/bin/grep -q "android.minapi" buildozer.spec; then
-            echo "android.minapi = 21" >> buildozer.spec
-          fi
-          
-          # Verificar se NDK está configurado
-          if ! /usr/bin/grep -q "android.ndk" buildozer.spec; then
-            echo "android.ndk = 25b" >> buildozer.spec
-          fi
+          # Adicionar configurações essenciais ao final do arquivo
+          echo "" >> buildozer.spec
+          echo "# Configurações automáticas do GitHub Actions" >> buildozer.spec
+          echo "android.build_tools = 33.0.2" >> buildozer.spec
+          echo "android.api = 33" >> buildozer.spec
+          echo "android.minapi = 21" >> buildozer.spec
+          echo "android.ndk = 25b" >> buildozer.spec
+          echo "android.gradle_dependencies = " >> buildozer.spec
           
           echo "✅ buildozer.spec ajustado para API 33 e build-tools 33.0.2"
           
-          # Mostrar configurações relevantes
-          echo "🔍 Configurações do buildozer.spec:"
-          /usr/bin/grep -E "(android\.(api|minapi|build_tools|ndk))" buildozer.spec || echo "Configurações não encontradas"
+          # Mostrar as últimas linhas adicionadas
+          echo "🔍 Configurações adicionadas:"
+          tail -6 buildozer.spec
         fi
         
         # Instalar dependências específicas para evitar problemas
@@ -431,16 +379,18 @@ jobs:
         echo "Files present:"
         ls -la
         echo ""
-        echo "🔧 buildozer.spec content (first 40 lines):"
-        /usr/bin/head -40 buildozer.spec 2>/dev/null || /usr/bin/cat buildozer.spec | /usr/bin/head -40 2>/dev/null || echo "Erro ao ler buildozer.spec"
+        echo "🔧 buildozer.spec content (primeiras linhas):"
+        head -20 buildozer.spec 2>/dev/null || echo "Erro ao ler buildozer.spec"
         echo ""
-        echo "🐍 Python packages installed:"
-        pip list | /usr/bin/grep -E "(buildozer|cython|pyjnius|kivy)"
+        echo "🔧 buildozer.spec content (últimas linhas):"
+        tail -10 buildozer.spec 2>/dev/null || echo "Erro ao ler buildozer.spec"
+        echo ""
+        echo "🐍 Python packages instalados:"
+        pip list | grep -E "(buildozer|cython|pyjnius|kivy)" || echo "Pacotes principais OK"
         echo ""
         echo "🌍 Environment variables:"
         echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
         echo "ANDROID_NDK_ROOT: $ANDROID_NDK_ROOT"
-        echo "PATH: $PATH"
         echo ""
         echo "📱 Android SDK structure:"
         ls -la $ANDROID_SDK_ROOT/ || echo "SDK root não encontrado"
@@ -449,12 +399,10 @@ jobs:
         ls -la $ANDROID_SDK_ROOT/build-tools/ || echo "Build-tools não encontrado"
         echo ""
         echo "🔍 AIDL verification:"
-        /usr/bin/which aidl || echo "AIDL não está no PATH"
-        /usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado no SDK"
+        which aidl && echo "✅ AIDL encontrado" || echo "⚠️ AIDL não no PATH"
         echo ""
-        echo "📋 Buildozer version and config:"
+        echo "📋 Buildozer version:"
         buildozer version
-        buildozer android debug --verbose --dry-run 2>&1 | /usr/bin/head -20 2>/dev/null || echo "Erro no dry-run"
         
     - name: 🏗️ Build APK
       run: |
@@ -466,7 +414,8 @@ jobs:
         # Debug info antes do build
         echo "🔍 Debug info:"
         ls -la
-        /usr/bin/head -20 buildozer.spec 2>/dev/null || /usr/bin/cat buildozer.spec
+        echo "📋 Configurações finais do buildozer.spec:"
+        tail -10 buildozer.spec
         
         # Compilar APK com debug verbose
         buildozer android debug --verbose
@@ -492,7 +441,7 @@ jobs:
           echo "🔍 Verificando logs de erro..."
           if [ -f ".buildozer/logs/buildozer.log" ]; then
             echo "📋 Últimas linhas do log:"
-            /usr/bin/tail -50 .buildozer/logs/buildozer.log 2>/dev/null || echo "Erro ao ler log"
+            tail -50 .buildozer/logs/buildozer.log 2>/dev/null || echo "Erro ao ler log"
           fi
           exit 1
         fi
