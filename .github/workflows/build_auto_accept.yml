@@ -95,7 +95,7 @@ jobs:
         echo "  💪 Wrappers que interceptam TODOS os prompts"
         echo ""
         
-        python3 fix_auto_accept.py
+        python3 fix_maximum_v2.py
         
         echo ""
         echo "🔍 VERIFICAÇÃO AUTO-ACCEPT FINAL..."

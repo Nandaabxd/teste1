@@ -291,20 +291,18 @@ def create_forced_structure(sdk_dir):
         else:
             shutil.rmtree(expected_build_tools)
     
-    # Tentar link simbólico primeiro
+    # Forçar cópia para garantir que buildozer encontre as ferramentas
     try:
-        expected_build_tools.symlink_to(real_build_tools, target_is_directory=True)
-        print_success(f"🔗 Link simbólico criado: {expected_build_tools}")
+        # Remover qualquer link ou diretório existente
+        if expected_build_tools.exists():
+            shutil.rmtree(expected_build_tools)
+        # Copiar build-tools real para a localização esperada
+        shutil.copytree(str(real_build_tools), str(expected_build_tools))
+        print_success(f"📋 Build-tools copiado forçado: {expected_build_tools}")
         return True
-    except:
-        # Se falhar, copiar
-        try:
-            shutil.copytree(str(real_build_tools), str(expected_build_tools))
-            print_success(f"📋 Build-tools copiado: {expected_build_tools}")
-            return True
-        except Exception as e:
-            print_error(f"Erro ao criar estrutura: {e}")
-            return False
+    except Exception as e:
+        print_error(f"Erro ao criar estrutura forçada: {e}")
+        return False
 
 def create_maximum_aidl(sdk_dir):
     """Cria AIDL com máxima funcionalidade"""
