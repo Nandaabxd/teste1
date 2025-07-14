@@ -62,7 +62,7 @@ android.sdk = 33
 android.build_tools = 33.0.2
 
 # (str) Android SDK command-line tools version to use
-android.cmdline_tools = 9.0
+android.cmdline_tools = 11.0
 
 # (str) Android entry point, default is ok for Kivy-based app
 android.entrypoint = org.kivy.android.PythonActivity
@@ -159,7 +159,7 @@ android.add_libs_x86_64 =
 android.copy_libs = 1
 
 # (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
-android.arch = armeabi-v7a
+android.archs = arm64-v8a, armeabi-v7a
 
 # (int) overrides automatic versionCode computation (used in build.gradle)
 android.numeric_version = 1

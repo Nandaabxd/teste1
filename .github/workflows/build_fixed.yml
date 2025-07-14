@@ -1,0 +1,159 @@
+name: 🚀 Build Android APK
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout do código
+      uses: actions/checkout@v4
+      
+    - name: ☕ Configurar Java 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: 🐍 Configurar Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: 💾 Cache das dependências
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.buildozer
+          ~/.cache/pip
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          ${{ runner.os }}-buildozer-
+          
+    - name: 📦 Instalar dependências do sistema
+      run: |
+        echo "🔧 Instalando dependências do sistema..."
+        sudo apt-get update -qq
+        sudo apt-get install -y \
+          git \
+          zip \
+          unzip \
+          python3-pip \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev \
+          build-essential \
+          libltdl-dev \
+          wget \
+          curl \
+          lbzip2 \
+          openjdk-17-jdk
+        
+        echo "☕ Configurando JAVA_HOME..."
+        echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+        echo "PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH" >> $GITHUB_ENV
+        
+    - name: 🔧 Verificar versões
+      run: |
+        echo "📱 App: NFC Writer PRO2 v2.0"
+        echo "🎯 Target: Android API 33"
+        echo "☕ Java: $(java -version 2>&1 | head -n 1)"
+        echo "🐍 Python: $(python3 --version)"
+        
+    - name: 🐍 Instalar Python dependencies
+      run: |
+        echo "📦 Instalando dependências Python..."
+        python3 -m pip install --upgrade pip
+        python3 -m pip install buildozer==1.5.0 cython==0.29.36
+        
+    - name: 🔧 Corrigir SDK Manager
+      run: |
+        echo "🔧 Executando correção do SDK Manager..."
+        python3 fix_github_actions_sdk.py
+        
+    - name: 📱 Criar diretórios necessários
+      run: |
+        echo "📁 Criando estrutura de diretórios..."
+        mkdir -p ~/.buildozer
+        mkdir -p bin
+        
+    - name: 🔑 Aceitar licenças do Android SDK
+      run: |
+        echo "🔑 Aceitando licenças do Android SDK..."
+        export ANDROID_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+        export ANDROID_HOME="$ANDROID_SDK_ROOT"
+        export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+        
+        # Aceitar licenças
+        yes | sdkmanager --licenses || true
+        
+    - name: 🚀 Compilar APK
+      run: |
+        echo "🚀 Iniciando compilação do APK..."
+        
+        # Configurar ambiente
+        export ANDROID_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+        export ANDROID_HOME="$ANDROID_SDK_ROOT"
+        export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+        export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+        
+        # Verificar configurações
+        echo "📋 Verificando configurações:"
+        echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
+        echo "JAVA_HOME: $JAVA_HOME"
+        echo "Java version: $(java -version 2>&1 | head -n 1)"
+        
+        # Compilar com verbose
+        echo "🔨 Iniciando build..."
+        buildozer android debug --verbose
+        
+    - name: 📦 Verificar APK gerado
+      run: |
+        echo "📦 Verificando APK gerado..."
+        ls -la bin/
+        if [ -f bin/*.apk ]; then
+          echo "✅ APK gerado com sucesso!"
+          APK_FILE=$(ls bin/*.apk | head -n 1)
+          echo "📱 APK: $APK_FILE"
+          echo "📏 Tamanho: $(du -h "$APK_FILE" | cut -f1)"
+        else
+          echo "❌ APK não foi gerado"
+          exit 1
+        fi
+        
+    - name: 🎉 Upload do APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: nfc-writer-pro2-v2.0-debug
+        path: bin/*.apk
+        retention-days: 30
+        
+    - name: 📊 Resumo do Build
+      run: |
+        echo "📊 Resumo do Build:"
+        echo "✅ Status: Sucesso"
+        echo "📱 App: NFC Writer PRO2 v2.0"
+        echo "🎯 Target: Android API 33"
+        echo "📦 APK: $(ls bin/*.apk | head -n 1)"
+        echo "🕒 Tempo de build: Concluído"
+        
+    - name: 🧹 Limpeza
+      if: always()
+      run: |
+        echo "🧹 Limpando arquivos temporários..."
+        rm -rf ~/.buildozer/android/platform/build-*
+        rm -rf ~/.buildozer/android/platform/dists
+        echo "✅ Limpeza concluída"
