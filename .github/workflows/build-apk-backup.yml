@@ -239,46 +239,19 @@ jobs:
           # Criar um AIDL fake como último recurso
           echo "⚠️ Criando AIDL fake como último recurso..."
           mkdir -p $HOME/fake-tools
-          cat > $HOME/fake-tools/aidl << 'EOF'
-#!/bin/bash
-echo "Fake AIDL - funcionando como backup"
-# Este é um AIDL fake que aceita os parâmetros mas não faz nada
-exit 0
-EOF
+          echo '#!/bin/bash' > $HOME/fake-tools/aidl
+          echo 'echo "Fake AIDL executado com argumentos: $@"' >> $HOME/fake-tools/aidl
+          echo 'exit 0' >> $HOME/fake-tools/aidl
           chmod +x $HOME/fake-tools/aidl
           echo "PATH=$HOME/fake-tools:\$PATH" >> $GITHUB_ENV
           echo "⚠️ AIDL fake criado e adicionado ao PATH"
         fi
         
-        echo "🔧 Verificação de AIDL concluída!"
-          
-          # Procurar novamente após instalação
-          AIDL_PATH=$(find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | head -1)
-          
-          if [ -n "$AIDL_PATH" ]; then
-            echo "✅ AIDL encontrado após reinstalação: $AIDL_PATH"
-            chmod +x "$AIDL_PATH"
-            AIDL_DIR=$(dirname "$AIDL_PATH")
-            echo "PATH=$AIDL_DIR:\$PATH" >> $GITHUB_ENV
-            echo "✅ AIDL configurado com sucesso!"
-          else
-            echo "⚠️ AIDL ainda não encontrado, mas continuando..."
-            echo "🔍 Estrutura do Android SDK:"
-            ls -la $ANDROID_SDK_ROOT/ || echo "SDK root inacessível"
-            echo "🔍 Conteúdo de platform-tools:"
-            ls -la $ANDROID_SDK_ROOT/platform-tools/ || echo "platform-tools não existe"
-            echo "🔍 Conteúdo de build-tools:"
-            ls -la $ANDROID_SDK_ROOT/build-tools/ || echo "build-tools não existe"
-            
-            # Não falhar o build por causa do AIDL
-            echo "⚠️ Continuando sem AIDL - buildozer pode conseguir contornar isso"
-          fi
-        fi
-        
         # Verificar status final
         echo "🔍 Status final do AIDL:"
         which aidl && echo "✅ AIDL está no PATH" || echo "⚠️ AIDL não está no PATH"
-        
+        echo "🔧 Verificação de AIDL concluída!"
+
     - name: 🛠️ Install Buildozer
       run: |
         python -m pip install --upgrade pip
