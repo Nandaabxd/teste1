@@ -107,9 +107,6 @@ jobs:
           
     - name: 📱 Install Android SDK
       uses: android-actions/setup-android@v3
-      with:
-        api-level: 33
-        ndk-version: '25.2.9519653'
         
     - name: 🔐 Accept Android SDK Licenses
       run: |
@@ -384,28 +381,28 @@ jobs:
           echo "🔧 Ajustando buildozer.spec..."
           
           # Remover configurações problemáticas e forçar versões estáveis
-          sed -i 's/android.gradle_dependencies = .*/android.gradle_dependencies = /g' buildozer.spec || true
-          sed -i 's/android.build_tools = .*/android.build_tools = 33.0.2/g' buildozer.spec || true
+          /usr/bin/sed -i 's/android.gradle_dependencies = .*/android.gradle_dependencies = /g' buildozer.spec || true
+          /usr/bin/sed -i 's/android.build_tools = .*/android.build_tools = 33.0.2/g' buildozer.spec || true
           
           # Adicionar configuração de build-tools se não existir
-          if ! grep -q "android.build_tools" buildozer.spec; then
+          if ! /usr/bin/grep -q "android.build_tools" buildozer.spec; then
             echo "android.build_tools = 33.0.2" >> buildozer.spec
           fi
           
           # Forçar API level estável
-          sed -i 's/android.api = .*/android.api = 33/g' buildozer.spec || true
-          sed -i 's/android.minapi = .*/android.minapi = 21/g' buildozer.spec || true
+          /usr/bin/sed -i 's/android.api = .*/android.api = 33/g' buildozer.spec || true
+          /usr/bin/sed -i 's/android.minapi = .*/android.minapi = 21/g' buildozer.spec || true
           
           # Adicionar configurações se não existirem
-          if ! grep -q "android.api" buildozer.spec; then
+          if ! /usr/bin/grep -q "android.api" buildozer.spec; then
             echo "android.api = 33" >> buildozer.spec
           fi
-          if ! grep -q "android.minapi" buildozer.spec; then
+          if ! /usr/bin/grep -q "android.minapi" buildozer.spec; then
             echo "android.minapi = 21" >> buildozer.spec
           fi
           
           # Verificar se NDK está configurado
-          if ! grep -q "android.ndk" buildozer.spec; then
+          if ! /usr/bin/grep -q "android.ndk" buildozer.spec; then
             echo "android.ndk = 25b" >> buildozer.spec
           fi
           
@@ -413,7 +410,7 @@ jobs:
           
           # Mostrar configurações relevantes
           echo "🔍 Configurações do buildozer.spec:"
-          grep -E "(android\.(api|minapi|build_tools|ndk))" buildozer.spec || echo "Configurações não encontradas"
+          /usr/bin/grep -E "(android\.(api|minapi|build_tools|ndk))" buildozer.spec || echo "Configurações não encontradas"
         fi
         
         # Instalar dependências específicas para evitar problemas
@@ -438,7 +435,7 @@ jobs:
         /usr/bin/head -40 buildozer.spec 2>/dev/null || /usr/bin/cat buildozer.spec | /usr/bin/head -40 2>/dev/null || echo "Erro ao ler buildozer.spec"
         echo ""
         echo "🐍 Python packages installed:"
-        pip list | grep -E "(buildozer|cython|pyjnius|kivy)"
+        pip list | /usr/bin/grep -E "(buildozer|cython|pyjnius|kivy)"
         echo ""
         echo "🌍 Environment variables:"
         echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
@@ -452,8 +449,8 @@ jobs:
         ls -la $ANDROID_SDK_ROOT/build-tools/ || echo "Build-tools não encontrado"
         echo ""
         echo "🔍 AIDL verification:"
-        which aidl || echo "AIDL não está no PATH"
-        find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado no SDK"
+        /usr/bin/which aidl || echo "AIDL não está no PATH"
+        /usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado no SDK"
         echo ""
         echo "📋 Buildozer version and config:"
         buildozer version
