@@ -167,7 +167,7 @@ jobs:
         
         # Listar versões disponíveis
         echo "📋 Versões de build-tools disponíveis:"
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | grep "build-tools" | head -10 2>/dev/null || $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | grep "build-tools" | sed -n '1,10p' 2>/dev/null || echo "Erro ao listar build-tools"
+        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | /usr/bin/grep "build-tools" | /usr/bin/head -10 2>/dev/null || echo "Erro ao listar build-tools"
         
         # Instalar apenas versões estáveis e disponíveis (NÃO instalar 36.0.0)
         echo "📦 Instalando build-tools versão 33 (estável)..."
@@ -255,7 +255,8 @@ jobs:
           /usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | while read aidl_file; do
             echo "  Encontrado: $aidl_file"
           done
-          AIDL_PATH=$(/usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | /usr/bin/head -1 2>/dev/null || /usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | /usr/bin/sed -n '1p')
+          # Usar alternativa mais robusta para obter o primeiro resultado
+          AIDL_PATH=$(/usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | /usr/bin/head -1 2>/dev/null || /usr/bin/find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | while read line; do echo "$line"; break; done)
         else
           echo "⚠️ Comando find não disponível, usando alternativa"
           AIDL_PATH=""
@@ -292,10 +293,10 @@ jobs:
           ls -la $ANDROID_SDK_ROOT/platform-tools/ 2>/dev/null || echo "platform-tools não existe"
           
           echo "🔍 Conteúdo de build-tools:"
-          if command -v find >/dev/null 2>&1; then
-            find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | head -20 2>/dev/null || find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | sed -n '1,20p' || echo "build-tools vazio"
+          if /usr/bin/test -x "/usr/bin/find"; then
+            /usr/bin/find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | /usr/bin/head -20 2>/dev/null || /usr/bin/find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | while IFS= read -r line && [ $((++count)) -le 20 ]; do echo "$line"; done || echo "build-tools vazio"
           else
-            ls -la $ANDROID_SDK_ROOT/build-tools/ 2>/dev/null || echo "build-tools vazio"
+            /usr/bin/ls -la $ANDROID_SDK_ROOT/build-tools/ 2>/dev/null || echo "build-tools vazio"
           fi
           
           # Criar um AIDL fake como último recurso usando caminhos absolutos
@@ -434,7 +435,7 @@ jobs:
         ls -la
         echo ""
         echo "🔧 buildozer.spec content (first 40 lines):"
-        head -40 buildozer.spec 2>/dev/null || sed -n '1,40p' buildozer.spec 2>/dev/null || echo "Erro ao ler buildozer.spec"
+        /usr/bin/head -40 buildozer.spec 2>/dev/null || /usr/bin/cat buildozer.spec | /usr/bin/head -40 2>/dev/null || echo "Erro ao ler buildozer.spec"
         echo ""
         echo "🐍 Python packages installed:"
         pip list | grep -E "(buildozer|cython|pyjnius|kivy)"
@@ -456,7 +457,7 @@ jobs:
         echo ""
         echo "📋 Buildozer version and config:"
         buildozer version
-        buildozer android debug --verbose --dry-run 2>&1 | head -20 2>/dev/null || buildozer android debug --verbose --dry-run 2>&1 | sed -n '1,20p' 2>/dev/null || echo "Erro no dry-run"
+        buildozer android debug --verbose --dry-run 2>&1 | /usr/bin/head -20 2>/dev/null || echo "Erro no dry-run"
         
     - name: 🏗️ Build APK
       run: |
@@ -468,7 +469,7 @@ jobs:
         # Debug info antes do build
         echo "🔍 Debug info:"
         ls -la
-        head -20 buildozer.spec 2>/dev/null || sed -n '1,20p' buildozer.spec 2>/dev/null || cat buildozer.spec
+        /usr/bin/head -20 buildozer.spec 2>/dev/null || /usr/bin/cat buildozer.spec
         
         # Compilar APK com debug verbose
         buildozer android debug --verbose
@@ -494,7 +495,7 @@ jobs:
           echo "🔍 Verificando logs de erro..."
           if [ -f ".buildozer/logs/buildozer.log" ]; then
             echo "📋 Últimas linhas do log:"
-            tail -50 .buildozer/logs/buildozer.log 2>/dev/null || sed -n '$-49,$p' .buildozer/logs/buildozer.log 2>/dev/null || echo "Erro ao ler log"
+            /usr/bin/tail -50 .buildozer/logs/buildozer.log 2>/dev/null || echo "Erro ao ler log"
           fi
           exit 1
         fi
