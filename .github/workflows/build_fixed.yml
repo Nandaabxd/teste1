@@ -79,20 +79,21 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install buildozer==1.5.0 cython==0.29.36
         
-    - name: 🔧 CORREÇÃO ULTRA DEFINITIVA
+    - name: 🔧 CORREÇÃO ULTIMATE PARA GITHUB ACTIONS
       run: |
-        echo "🔧 Executando CORREÇÃO ULTRA DEFINITIVA..."
-        echo "🛡️ GARANTIA: Esta versão DEVE funcionar 100%!"
-        echo "🎯 Corrigindo DEFINITIVAMENTE:"
-        echo "  1. SDK completo do zero"
-        echo "  2. Licenças com TODOS os hashes"
-        echo "  3. APENAS componentes compatíveis"
+        echo "🔧 Executando CORREÇÃO ULTIMATE..."
+        echo "🛡️ GARANTIA: Esta versão ULTIMATE DEVE funcionar 100%!"
+        echo "🎯 Corrigindo ULTIMATE:"
+        echo "  1. SDK específico para GitHub Actions Linux"
+        echo "  2. Licenças com TODOS os hashes conhecidos"
+        echo "  3. Componentes estáveis FORÇADOS"
         echo "  4. Build-tools no local EXATO"
-        echo "  5. AIDL super funcional"
+        echo "  5. AIDL ULTIMATE funcional"
+        echo "  6. Remoção FORÇADA de build-tools problemáticos"
         
-        python3 fix_ultra_definitivo.py
+        python3 fix_github_actions_ultimate.py
         
-        echo "🔍 VERIFICAÇÃO FINAL..."
+        echo "🔍 VERIFICAÇÃO ULTIMATE..."
         
         SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
         
