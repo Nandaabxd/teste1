@@ -14,6 +14,19 @@ jobs:
     - name: 📥 Checkout Repository
       uses: actions/checkout@v4
       
+    - name: 🔧 Setup Environment
+      run: |
+        echo "🔧 Configurando ambiente Ubuntu..."
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq \
+          build-essential \
+          git \
+          unzip \
+          zip \
+          curl \
+          wget
+        echo "✅ Ambiente configurado!"
+      
     - name: 🐍 Setup Python
       uses: actions/setup-python@v4
       with:
@@ -39,13 +52,10 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          build-essential \
-          git \
           python3-dev \
           python3-pip \
           python3-setuptools \
           python3-wheel \
-          openjdk-17-jdk \
           autoconf \
           libtool \
           pkg-config \
@@ -55,228 +65,78 @@ jobs:
           cmake \
           libffi-dev \
           libssl-dev \
-          ccache \
-          unzip \
-          zip \
-          coreutils
+          ccache
           
     - name: 📱 Install Android SDK
-      run: |
-        echo "📱 Configurando Android SDK..."
-        
-        # Usar o SDK que já está instalado no GitHub Actions
-        if [ -z "$ANDROID_SDK_ROOT" ]; then
-          export ANDROID_SDK_ROOT=$ANDROID_HOME
-        fi
-        
-        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-        echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-        
-        # Definir NDK Root
-        if [ -z "$ANDROID_NDK_ROOT" ]; then
-          export ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk-bundle
-          if [ ! -d "$ANDROID_NDK_ROOT" ]; then
-            # Procurar NDK em outras localizações
-            NDK_DIR=$(find $ANDROID_SDK_ROOT -name "ndk" -type d 2>/dev/null | sed -n '1p')
-            if [ -n "$NDK_DIR" ]; then
-              ANDROID_NDK_ROOT=$(find $NDK_DIR -maxdepth 1 -type d | grep -E '[0-9]+\.[0-9]+' | sed -n '1p')
-            fi
-          fi
-        fi
-        
-        echo "ANDROID_NDK_ROOT=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
-        
-        echo "✅ Android SDK configurado:"
-        echo "  SDK: $ANDROID_SDK_ROOT"
-        echo "  NDK: $ANDROID_NDK_ROOT"
+      uses: android-actions/setup-android@v3
         
     - name: 🔐 Accept Android SDK Licenses
       run: |
         echo "🔐 Aceitando licenças do Android SDK..."
         
-        # Criar diretório de licenças se não existir
+        # Criar diretório de licenças
         mkdir -p $ANDROID_SDK_ROOT/licenses
         
-        # Aceitar TODAS as licenças possíveis do Android SDK com todos os hashes conhecidos
+        # Aceitar licenças do Android SDK
         echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
         echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
         echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
         
-        echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_SDK_ROOT/licenses/android-sdk-preview-license
-        echo "504667f4c0de7af1a06de9f4b1727b84351f2910" >> $ANDROID_SDK_ROOT/licenses/android-sdk-preview-license
-        
-        echo "d975f751698a77b662f1254ddbeed3901e976f5a" > $ANDROID_SDK_ROOT/licenses/intel-android-extra-license
-        echo "601085b94cd77f0b54ff86406957099ebe79c4d6" > $ANDROID_SDK_ROOT/licenses/google-gdk-license
-        echo "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" >> $ANDROID_SDK_ROOT/licenses/google-gdk-license
-        echo "e9acab5b5fbb560a72cfaecce8946896ff6aab9d" > $ANDROID_SDK_ROOT/licenses/mips-android-sysimage-license
-        echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_SDK_ROOT/licenses/android-googletv-license
-        echo "859f317696f67ef3d7f30a50a5560e7834b43903" > $ANDROID_SDK_ROOT/licenses/android-sdk-arm-dbt-license
-        
-        # Aceitar licenças usando múltiplos métodos
-        echo "🔄 Método 1: Aceitar licenças via sdkmanager..."
+        # Aceitar licenças via sdkmanager
         yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
-        
-        echo "🔄 Método 2: Força aceitar com timeout..."
-        timeout 60s bash -c 'printf "y\n%.0s" {1..50} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses' 2>/dev/null || true
-        
-        echo "🔄 Método 3: Aceitar diretamente cada componente..."
-        printf "y\n%.0s" {1..10} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
-        
-        # Verificar se as licenças foram criadas
-        echo "🔍 Licenças criadas:"
-        ls -la $ANDROID_SDK_ROOT/licenses/ 2>/dev/null || echo "Diretório de licenças não criado"
-        
-        # Mostrar conteúdo das licenças
-        echo "📋 Conteúdo das licenças:"
-        for license_file in $ANDROID_SDK_ROOT/licenses/*; do
-          if [ -f "$license_file" ]; then
-            echo "$(basename $license_file): $(wc -l < $license_file) linhas"
-          fi
-        done
         
         echo "✅ Licenças configuradas!"
         
-    - name: 🛠️ Install Required Build Tools
+    - name: 🛠️ Install Build Tools
       run: |
-        echo "🛠️ Instalando build-tools necessárias..."
+        echo "🛠️ Instalando build-tools..."
         
-        # Aceitar licenças primeiro com múltiplos métodos
-        echo "🔐 Garantindo aceitação de licenças..."
+        # Aceitar licenças
         printf "y\n%.0s" {1..20} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
         
-        # Listar versões disponíveis
-        echo "📋 Versões de build-tools disponíveis:"
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | grep "build-tools" | sed -n '1,10p'
-        
-        # Instalar apenas versões estáveis e disponíveis (NÃO instalar 36.0.0)
-        echo "📦 Instalando build-tools versão 33 (estável)..."
+        # Instalar build-tools estáveis
         $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" || echo "⚠️ Erro ao instalar 33.0.2"
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.1" || echo "⚠️ Erro ao instalar 33.0.1"
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.0" || echo "⚠️ Erro ao instalar 33.0.0"
-        
-        echo "📦 Instalando build-tools versão 34 (backup)..."
         $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" || echo "⚠️ Erro ao instalar 34.0.0"
         
-        echo "📦 Instalando build-tools versão 32 (fallback)..."
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "build-tools;32.0.0" || echo "⚠️ Erro ao instalar 32.0.0"
-        
-        # Instalar platform-tools (contém AIDL)
-        echo "📦 Instalando platform-tools (contém AIDL)..."
+        # Instalar platform-tools
         $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platform-tools" || echo "⚠️ Erro ao instalar platform-tools"
         
         # Instalar plataforma Android API 33
-        echo "📦 Instalando plataforma Android API 33..."
         $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" || echo "⚠️ Erro ao instalar platform 33"
         
-        # NÃO instalar build-tools 36 que está causando problema de licença
-        echo "⚠️ Evitando build-tools;36.0.0 devido a problemas de licença"
-        
-        # Verificar o que foi instalado
+        # Verificar instalação
         echo "🔍 Build-tools instaladas:"
-        ls -la $ANDROID_SDK_ROOT/build-tools/ 2>/dev/null || echo "❌ Diretório build-tools não encontrado"
+        ls -la $ANDROID_SDK_ROOT/build-tools/ 2>/dev/null || echo "Build-tools não encontrado"
         
-        echo "🔍 Platform-tools instaladas:"
-        ls -la $ANDROID_SDK_ROOT/platform-tools/ 2>/dev/null || echo "❌ Diretório platform-tools não encontrado"
-        
-        # Procurar por AIDL em todo o SDK
-        echo "🔍 Procurando por AIDL em build-tools:"
-        find $ANDROID_SDK_ROOT/build-tools -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado em build-tools"
-        
-        echo "🔍 Procurando por AIDL em platform-tools:"
-        find $ANDROID_SDK_ROOT/platform-tools -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado em platform-tools"
-        
-        echo "🔍 Procurando por AIDL em todo o SDK:"
-        find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado em lugar algum"
-        
-        # Encontrar a versão mais recente das build-tools instaladas
+        # Adicionar ao PATH
         if [ -d "$ANDROID_SDK_ROOT/build-tools" ]; then
           LATEST_BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools/ | sort -V | tail -1)
-          echo "🎯 Usando build-tools: $LATEST_BUILD_TOOLS"
-          
-          # Adicionar build-tools ao PATH
-          echo "PATH=$ANDROID_SDK_ROOT/build-tools/$LATEST_BUILD_TOOLS:\$PATH" >> $GITHUB_ENV
+          echo "PATH=$ANDROID_SDK_ROOT/build-tools/$LATEST_BUILD_TOOLS:$PATH" >> $GITHUB_ENV
           echo "✅ Build-tools $LATEST_BUILD_TOOLS adicionadas ao PATH"
-        else
-          echo "⚠️ Build-tools não encontradas, mas continuando..."
         fi
         
-        # Adicionar platform-tools ao PATH também
-        if [ -d "$ANDROID_SDK_ROOT/platform-tools" ]; then
-          echo "PATH=$ANDROID_SDK_ROOT/platform-tools:\$PATH" >> $GITHUB_ENV
-          echo "✅ Platform-tools adicionadas ao PATH"
-        fi
+        echo "✅ Build-tools configuradas!"
         
-        echo "✅ Build-tools e platform-tools configuradas!"
-        
-    - name: 🔧 Verify and Fix AIDL
+    - name: 🔧 Setup AIDL
       run: |
-        echo "🔍 Verificando AIDL..."
+        echo "🔍 Configurando AIDL..."
         
-        # Aceitar licenças novamente antes de instalar componentes
-        printf "y\n%.0s" {1..10} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+        # Procurar AIDL nas build-tools
+        find $ANDROID_SDK_ROOT/build-tools -name "aidl" -type f 2>/dev/null || echo "Procurando AIDL..."
         
-        # Instalar componentes essenciais que contêm AIDL
-        echo "📦 Garantindo instalação de componentes com AIDL..."
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platform-tools" || echo "⚠️ Erro ao instalar platform-tools"
-        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "tools" 2>/dev/null || echo "⚠️ Tools legacy não disponível"
-        
-        # Procurar AIDL em todo o Android SDK
-        echo "🔍 Procurando AIDL em todo o SDK..."
-        find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | while read aidl_file; do
-          echo "  Encontrado: $aidl_file"
-        done
-        
-        AIDL_PATH=$(find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null | sed -n '1p')
-        
-        if [ -n "$AIDL_PATH" ]; then
-          echo "✅ AIDL encontrado: $AIDL_PATH"
-          
-          # Verificar se o AIDL é executável
-          if [ -x "$AIDL_PATH" ]; then
-            echo "✅ AIDL é executável"
-            # Testar AIDL (alguns não suportam --help)
-            if $AIDL_PATH --help >/dev/null 2>&1; then
-              echo "✅ AIDL responde a --help"
-            else
-              echo "✅ AIDL funciona (sem suporte a --help)"
+        # Adicionar build-tools ao PATH se AIDL existir
+        if [ -d "$ANDROID_SDK_ROOT/build-tools" ]; then
+          for bt_version in $(ls $ANDROID_SDK_ROOT/build-tools/ | sort -V -r); do
+            if [ -f "$ANDROID_SDK_ROOT/build-tools/$bt_version/aidl" ]; then
+              echo "✅ AIDL encontrado em: $bt_version"
+              echo "PATH=$ANDROID_SDK_ROOT/build-tools/$bt_version:$PATH" >> $GITHUB_ENV
+              break
             fi
-          else
-            echo "⚠️ AIDL não é executável, corrigindo..."
-            chmod +x "$AIDL_PATH"
-          fi
-          
-          # Adicionar diretório do AIDL ao PATH
-          AIDL_DIR=$(dirname "$AIDL_PATH")
-          echo "PATH=$AIDL_DIR:\$PATH" >> $GITHUB_ENV
-          echo "✅ AIDL adicionado ao PATH: $AIDL_DIR"
-          
-        else
-          echo "❌ AIDL ainda não encontrado!"
-          echo "🔍 Listando estrutura completa do SDK para debug:"
-          find $ANDROID_SDK_ROOT -type f -name "*aidl*" 2>/dev/null || echo "Nenhum arquivo relacionado a AIDL encontrado"
-          
-          echo "🔍 Conteúdo de platform-tools:"
-          ls -la $ANDROID_SDK_ROOT/platform-tools/ 2>/dev/null || echo "platform-tools não existe"
-          
-          echo "🔍 Conteúdo de build-tools:"
-          find $ANDROID_SDK_ROOT/build-tools -type f 2>/dev/null | sed -n '1,20p' || echo "build-tools vazio"
-          
-          # Criar um AIDL fake como último recurso
-          echo "⚠️ Criando AIDL fake como último recurso..."
-          mkdir -p $HOME/fake-tools
-          echo '#!/bin/bash' > $HOME/fake-tools/aidl
-          echo 'echo "Fake AIDL executado com argumentos: $@"' >> $HOME/fake-tools/aidl
-          echo 'exit 0' >> $HOME/fake-tools/aidl
-          chmod +x $HOME/fake-tools/aidl
-          echo "PATH=$HOME/fake-tools:\$PATH" >> $GITHUB_ENV
-          echo "⚠️ AIDL fake criado e adicionado ao PATH"
+          done
         fi
         
-        # Verificar status final
-        echo "🔍 Status final do AIDL:"
-        which aidl && echo "✅ AIDL está no PATH" || echo "⚠️ AIDL não está no PATH"
-        echo "🔧 Verificação de AIDL concluída!"
-        
+        echo "✅ AIDL configurado!"
+
     - name: 🛠️ Install Buildozer
       run: |
         python -m pip install --upgrade pip
@@ -285,150 +145,82 @@ jobs:
         pip install cython==0.29.33
         pip install colorama
         pip install appdirs
-        # pip install sh  # Removido - causa problemas no GitHub Actions
+        pip install sh
         pip install pexpect
         
-    - name: 🔧 Fix Buildozer Issues
+    - name: 🔧 Configure Buildozer
       run: |
-        # Corrigir problemas comuns do buildozer
-        echo "🔧 Aplicando correções..."
-        
         # Verificar se buildozer.spec existe
         if [ ! -f "buildozer.spec" ]; then
           echo "❌ buildozer.spec não encontrado!"
           exit 1
         fi
         
-        # Instalar dependências adicionais que podem estar faltando
-        sudo apt-get install -y \
-          libc6-dev \
-          libffi-dev \
-          libssl-dev \
-          python3-distutils \
-          python3-venv || true
+        # Criar backup e configurar
+        cp buildozer.spec buildozer.spec.backup
+        
+        # Adicionar configurações automáticas
+        echo "" >> buildozer.spec
+        echo "# Configurações GitHub Actions" >> buildozer.spec
+        echo "android.build_tools = 33.0.2" >> buildozer.spec
+        echo "android.api = 33" >> buildozer.spec
+        echo "android.minapi = 21" >> buildozer.spec
+        echo "android.ndk = 25b" >> buildozer.spec
+        
+        # Configurar git
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Action"
         
         # Criar diretórios necessários
         mkdir -p ~/.buildozer/cache
         mkdir -p ~/.local/share/python-for-android
         
-        # Configurar git (necessário para algumas dependências)
-        git config --global user.email "action@github.com"
-        git config --global user.name "GitHub Action"
+        # Configurar variáveis de ambiente
+        echo "ANDROIDSDK=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+        echo "ANDROIDNDK=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
+        echo "ANDROIDAPI=33" >> $GITHUB_ENV
+        echo "ANDROIDMINAPI=21" >> $GITHUB_ENV
         
-        # Limpar cache se necessário
-        buildozer android clean || true
+        echo "✅ Buildozer configurado!"
         
     - name: 📋 Show Build Info
       run: |
-        echo "🔍 Environment Info:"
+        echo "🔍 Informações do ambiente:"
         echo "Python: $(python --version)"
-        echo "Java: $(java -version)"
+        echo "Java: $(java -version 2>&1 | head -1)"
         echo "Buildozer: $(buildozer version)"
-        echo "NDK: $ANDROID_NDK_ROOT"
         echo "SDK: $ANDROID_SDK_ROOT"
+        echo "NDK: $ANDROID_NDK_ROOT"
         
-    - name: 🔧 Configure Buildozer
-      run: |
-        # Criar diretório .buildozer se não existir
-        mkdir -p ~/.buildozer
+        echo "🔍 AIDL status:"
+        which aidl && echo "✅ AIDL disponível" || echo "⚠️ AIDL não encontrado"
         
-        # Configurar variáveis de ambiente
-        export ANDROIDSDK="$ANDROID_SDK_ROOT"
-        export ANDROIDNDK="$ANDROID_NDK_ROOT"
-        export ANDROIDAPI="33"
-        export ANDROIDMINAPI="21"
-        
-        echo "SDK Path: $ANDROIDSDK"
-        echo "NDK Path: $ANDROIDNDK"
-        
-        # Verificar e ajustar buildozer.spec para usar build-tools corretas
-        if [ -f "buildozer.spec" ]; then
-          echo "🔧 Ajustando buildozer.spec..."
-          
-          # Forçar uso de build-tools 33 se estiver configurado para 36
-          sed -i 's/android.gradle_dependencies = .*/android.gradle_dependencies = /g' buildozer.spec || true
-          sed -i 's/android.build_tools = .*/android.build_tools = 33.0.2/g' buildozer.spec || true
-          
-          # Adicionar configuração de build-tools se não existir
-          if ! grep -q "android.build_tools" buildozer.spec; then
-            echo "android.build_tools = 33.0.2" >> buildozer.spec
-          fi
-          
-          echo "✅ buildozer.spec ajustado para usar build-tools 33.0.2"
-        fi
-        
-        # Forçar instalação de dependências que podem faltar
-        pip install --upgrade cython==0.29.33
-        pip install --upgrade pyjnius
-        
-    - name: 🔍 Pre-Build Diagnostics
-      run: |
-        echo "🔍 Diagnóstico pré-build:"
-        echo "Working directory: $(pwd)"
-        echo "Files present:"
-        ls -la
-        echo ""
-        echo "🔧 buildozer.spec content (first 40 lines):"
-        head -40 buildozer.spec
-        echo ""
-        echo "🐍 Python packages installed:"
-        pip list | grep -E "(buildozer|cython|pyjnius|kivy)"
-        echo ""
-        echo "🌍 Environment variables:"
-        echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
-        echo "ANDROID_NDK_ROOT: $ANDROID_NDK_ROOT"
-        echo "PATH: $PATH"
-        echo ""
-        echo "📱 Android SDK structure:"
-        ls -la $ANDROID_SDK_ROOT/ || echo "SDK root não encontrado"
-        echo ""
-        echo "🛠️ Build-tools disponíveis:"
-        ls -la $ANDROID_SDK_ROOT/build-tools/ || echo "Build-tools não encontrado"
-        echo ""
-        echo "🔍 AIDL verification:"
-        which aidl || echo "AIDL não está no PATH"
-        find $ANDROID_SDK_ROOT -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado no SDK"
-        echo ""
-        echo "📋 Buildozer version and config:"
-        buildozer version
-        buildozer android debug --verbose --dry-run 2>&1 | head -20 || echo "Erro no dry-run"
+        echo "🔍 Configurações do buildozer.spec:"
+        tail -10 buildozer.spec
         
     - name: 🏗️ Build APK
       run: |
         echo "🚀 Iniciando compilação do APK..."
         echo "📱 App: NFC Writer PRO2 v2.0"
         echo "🎯 Target: Android API 33"
-        echo "📐 Arch: ARM 32/64-bit"
         
-        # Debug info antes do build
-        echo "🔍 Debug info:"
-        ls -la
-        cat buildozer.spec | sed -n '1,20p'
-        
-        # Compilar APK com debug verbose
+        # Compilar APK
         buildozer android debug --verbose
         
     - name: 📱 Verify APK
       run: |
         echo "🔍 Verificando APK gerado..."
-        ls -la bin/ || echo "❌ Diretório bin/ não existe"
         
-        # Verificar se algum APK foi gerado
-        find . -name "*.apk" -type f || echo "❌ Nenhum APK encontrado"
-        
-        if [ -d "bin" ] && [ -n "$(ls -A bin/*.apk 2>/dev/null)" ]; then
+        if [ -d "bin" ] && [ -n "$(find bin -name "*.apk" 2>/dev/null)" ]; then
           echo "✅ APK gerado com sucesso!"
-          APK_FILE=$(ls bin/*.apk | sed -n '1p')
+          APK_FILE=$(find bin -name "*.apk" | head -1)
           echo "📱 Arquivo: $APK_FILE"
-          echo "📊 Tamanho: $(du -h $APK_FILE | cut -f1)"
-          
-          # Verificar estrutura do APK
-          file $APK_FILE
+          echo "📊 Tamanho: $(du -h "$APK_FILE" | cut -f1)"
+          ls -la "$APK_FILE"
         else
           echo "❌ APK não foi gerado!"
-          echo "🔍 Verificando logs de erro..."
+          echo "🔍 Logs de erro:"
           if [ -f ".buildozer/logs/buildozer.log" ]; then
-            echo "📋 Últimas linhas do log:"
             tail -50 .buildozer/logs/buildozer.log
           fi
           exit 1
@@ -441,41 +233,6 @@ jobs:
         path: bin/*.apk
         retention-days: 30
         
-    - name: 📋 Create Release Notes
-      if: success()
-      run: |
-        echo "🎉 **NFC Writer PRO2 v2.0 - APK Gerado com Sucesso!**" > release_notes.md
-        echo "" >> release_notes.md
-        echo "### 📱 **Informações do APK:**" >> release_notes.md
-        echo "- **App**: NFC Writer PRO2" >> release_notes.md
-        echo "- **Versão**: 2.0" >> release_notes.md
-        echo "- **Android Min**: API 21 (Android 5.0)" >> release_notes.md
-        echo "- **Android Target**: API 33 (Android 13)" >> release_notes.md
-        echo "- **Arquitetura**: ARM 32/64-bit" >> release_notes.md
-        echo "" >> release_notes.md
-        echo "### 🔍 **Funcionalidades:**" >> release_notes.md
-        echo "- ✅ Leitura de tags NFC" >> release_notes.md
-        echo "- ✅ Escrita de tags NFC (10 tipos)" >> release_notes.md
-        echo "- ✅ Interface moderna e intuitiva" >> release_notes.md
-        echo "- ✅ Histórico de leituras" >> release_notes.md
-        echo "- ✅ Validação de dados" >> release_notes.md
-        echo "- ✅ Preview antes de escrever" >> release_notes.md
-        echo "" >> release_notes.md
-        echo "### 📥 **Como usar:**" >> release_notes.md
-        echo "1. Baixe o APK dos artifacts acima" >> release_notes.md
-        echo "2. Habilite 'Fontes Desconhecidas' no Android" >> release_notes.md
-        echo "3. Instale o APK" >> release_notes.md
-        echo "4. Teste com tags NFC!" >> release_notes.md
-        
-        cat release_notes.md
-        
-    - name: 📤 Upload Release Notes
-      uses: actions/upload-artifact@v4
-      with:
-        name: release-notes
-        path: release_notes.md
-        retention-days: 30
-
     - name: 🎉 Success Notification
       if: success()
       run: |
@@ -485,10 +242,5 @@ jobs:
         echo ""
         echo "📱 Seu APK está pronto!"
         echo "📥 Download: Na aba 'Actions' > 'Artifacts'"
-        echo ""
-        echo "🚀 Próximos passos:"
-        echo "   1. Baixe o APK"
-        echo "   2. Instale no celular"
-        echo "   3. Teste com tags NFC"
         echo ""
         echo "✨ Parabéns! Seu app NFC está funcionando!"
