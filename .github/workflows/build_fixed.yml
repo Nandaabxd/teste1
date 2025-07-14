@@ -79,17 +79,18 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install buildozer==1.5.0 cython==0.29.36
         
-    - name: 🔧 CORREÇÃO SUPER ROBUSTA
+    - name: 🔧 CORREÇÃO ULTRA DEFINITIVA
       run: |
-        echo "🔧 Executando CORREÇÃO SUPER ROBUSTA..."
-        echo "🎯 Garantindo que TUDO funcione:"
-        echo "  1. SDK existe e está configurado"
-        echo "  2. Licenças à prova de balas"
+        echo "🔧 Executando CORREÇÃO ULTRA DEFINITIVA..."
+        echo "🛡️ GARANTIA: Esta versão DEVE funcionar 100%!"
+        echo "🎯 Corrigindo DEFINITIVAMENTE:"
+        echo "  1. SDK completo do zero"
+        echo "  2. Licenças com TODOS os hashes"
         echo "  3. APENAS componentes compatíveis"
         echo "  4. Build-tools no local EXATO"
         echo "  5. AIDL super funcional"
         
-        python3 fix_super_robusto.py
+        python3 fix_ultra_definitivo.py
         
         echo "🔍 VERIFICAÇÃO FINAL..."
         
