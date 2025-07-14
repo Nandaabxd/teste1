@@ -20,7 +20,7 @@ version = 2.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.1.0,pyjnius==1.6.1,android
+requirements = python3,kivy==master, https://github.com/kivymd/KivyMD/archive/master.zip,pyjnius==1.6.1,android
 
 # (list) List of inclusions using pattern matching
 #source.include_patterns = assets/*,images/*.png
@@ -61,6 +61,9 @@ android.sdk = 33
 # (str) Android build-tools version to use (compatible with API 33)
 android.build_tools = 33.0.2
 
+# (str) Android SDK command-line tools version to use
+android.cmdline_tools = 9.0
+
 # (str) Android entry point, default is ok for Kivy-based app
 android.entrypoint = org.kivy.android.PythonActivity
 
@@ -69,6 +72,15 @@ android.service_main_class = org.kivy.android.PythonService
 
 # (str) Android app theme, default is ok for Kivy-based app
 android.theme = "@android:style/Theme.NoTitleBar"
+
+# (str) Path to a custom command-line tools directory
+android.sdk_path = 
+
+# (str) Path to Android SDK directory
+android.sdk_dir = 
+
+# (str) Android SDK auto-accept licenses
+android.auto_accept_licenses = True
 
 # (list) Pattern to whitelist for the whole project
 android.whitelist = 

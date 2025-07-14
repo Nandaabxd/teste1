@@ -1,0 +1,115 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git zip unzip openjdk-11-jdk python3-pip python3-venv
+        sudo apt-get install -y libffi-dev libssl-dev
+        sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev libncurses5-dev
+        sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev
+        sudo apt-get install -y zlib1g-dev liblzma-dev
+    
+    - name: Set up Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+    
+    - name: Cache buildozer global directory
+      uses: actions/cache@v3
+      with:
+        path: ~/.buildozer
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          ${{ runner.os }}-buildozer-
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install buildozer cython
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Download and setup Android SDK Command Line Tools
+      run: |
+        # Criar diretório base
+        mkdir -p ~/.buildozer/android/platform
+        cd ~/.buildozer/android/platform
+        
+        # Baixar SDK Command Line Tools
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+        unzip -q commandlinetools-linux-9477386_latest.zip
+        
+        # Criar estrutura correta
+        mkdir -p android-sdk/cmdline-tools
+        mv cmdline-tools android-sdk/cmdline-tools/latest
+        
+        # Configurar PATH
+        echo "export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk" >> ~/.bashrc
+        echo "export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH" >> ~/.bashrc
+        source ~/.bashrc
+        
+        # Aceitar licenças
+        yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+        
+        # Instalar componentes necessários
+        android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools"
+        android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-33"
+        android-sdk/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2"
+        
+        # Limpar arquivo ZIP
+        rm commandlinetools-linux-9477386_latest.zip
+    
+    - name: Build APK with Buildozer
+      run: |
+        # Configurar variáveis de ambiente
+        export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
+        export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
+        export PATH=$ANDROID_SDK_ROOT/platform-tools:$PATH
+        
+        # Verificar se o SDK Manager está funcionando
+        which sdkmanager
+        sdkmanager --version
+        
+        # Construir APK
+        buildozer android debug --verbose
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: nfc-writer-pro2-apk
+        path: bin/*.apk
+    
+    - name: Show build logs on failure
+      if: failure()
+      run: |
+        echo "=== Build logs ==="
+        find . -name "*.log" -exec cat {} \;
+        echo "=== End of build logs ==="
