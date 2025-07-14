@@ -20,7 +20,7 @@ version = 2.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.1.0,pyjnius==1.6.1,android
+requirements = python3,kivy==master, https://github.com/kivymd/KivyMD/archive/master.zip,pyjnius==1.6.1,android
 
 # (list) List of inclusions using pattern matching
 #source.include_patterns = assets/*,images/*.png
