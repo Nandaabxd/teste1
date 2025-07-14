@@ -35,7 +35,7 @@ jobs:
     - name: ☕ Setup Java JDK
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '11'
         distribution: 'temurin'
         
     - name: 📦 Cache Dependencies
@@ -272,15 +272,29 @@ jobs:
         # Criar diretórios necessários para buildozer
         mkdir -p ~/.buildozer/cache
         mkdir -p ~/.local/share/python-for-android
-        mkdir -p ~/.buildozer/android/platform/android-sdk
         
-        # Copiar SDK inteiro para onde buildozer espera
-        echo "🔄 Copiando SDK para buildozer..."
-        cp -r $ANDROID_SDK_ROOT/* ~/.buildozer/android/platform/android-sdk/ 2>/dev/null || true
+        # FORÇAR buildozer a usar o SDK que preparamos
+        echo "🔄 Configurando buildozer para usar SDK pré-instalado..."
         
-        # Criar links simbólicos para SDK
-        ln -sf $ANDROID_SDK_ROOT ~/.buildozer/android/platform/android-sdk/android-sdk 2>/dev/null || true
-        ln -sf $ANDROID_NDK_ROOT ~/.buildozer/android/platform/android-ndk 2>/dev/null || true
+        # Remover qualquer SDK antigo do buildozer
+        rm -rf ~/.buildozer/android/platform/android-sdk 2>/dev/null || true
+        
+        # Criar link simbólico direto para o SDK correto
+        mkdir -p ~/.buildozer/android/platform/
+        ln -sf $ANDROID_SDK_ROOT ~/.buildozer/android/platform/android-sdk
+        
+        # Verificar se o link foi criado corretamente
+        if [ -L ~/.buildozer/android/platform/android-sdk ]; then
+          echo "✅ Link simbólico criado: ~/.buildozer/android/platform/android-sdk -> $ANDROID_SDK_ROOT"
+          ls -la ~/.buildozer/android/platform/android-sdk/cmdline-tools/
+        else
+          echo "❌ Falha ao criar link simbólico, copiando SDK..."
+          cp -r $ANDROID_SDK_ROOT ~/.buildozer/android/platform/android-sdk/
+        fi
+        
+        # Criar link para NDK
+        rm -rf ~/.buildozer/android/platform/android-ndk 2>/dev/null || true
+        ln -sf $ANDROID_NDK_ROOT ~/.buildozer/android/platform/android-ndk
         
         # Configurar variáveis de ambiente para buildozer
         echo "ANDROIDSDK=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
@@ -292,10 +306,11 @@ jobs:
         
         # Verificar estrutura final
         echo "🔍 Verificando estrutura buildozer:"
-        ls -la ~/.buildozer/android/platform/android-sdk/build-tools/ 2>/dev/null || echo "Build-tools não copiadas"
+        ls -la ~/.buildozer/android/platform/android-sdk/cmdline-tools/ 2>/dev/null || echo "Cmdline-tools não encontrado"
+        ls -la ~/.buildozer/android/platform/android-sdk/build-tools/ 2>/dev/null || echo "Build-tools não encontrado"
         find ~/.buildozer/android/platform/android-sdk/build-tools -name "aidl" -type f 2>/dev/null || echo "AIDL não encontrado"
         
-        echo "✅ Buildozer configurado com SDK pré-instalado!"
+        echo "✅ Buildozer configurado para usar SDK pré-instalado!"
         
     - name: 📋 Show Build Info
       run: |
@@ -305,9 +320,13 @@ jobs:
         echo "Buildozer: $(buildozer version)"
         echo "SDK: $ANDROID_SDK_ROOT"
         echo "NDK: $ANDROID_NDK_ROOT"
+        echo "JAVA_HOME: $JAVA_HOME"
         
         echo "🔍 AIDL status:"
         which aidl && echo "✅ AIDL disponível" || echo "⚠️ AIDL não encontrado"
+        
+        echo "🔍 Verificando SDKs disponíveis:"
+        ls -la ~/.buildozer/android/platform/android-sdk/cmdline-tools/ 2>/dev/null || echo "Cmdline-tools não encontrado"
         
         echo "🔍 Configurações do buildozer.spec:"
         tail -10 buildozer.spec
@@ -317,8 +336,17 @@ jobs:
         echo "🚀 Iniciando compilação do APK..."
         echo "📱 App: NFC Writer PRO2 v2.0"
         echo "🎯 Target: Android API 33"
+        echo "☕ Java: $(java -version 2>&1 | head -1)"
         
-        # Compilar APK
+        # Garantir que Java 11 seja usado
+        export JAVA_HOME=$JAVA_HOME
+        export PATH=$JAVA_HOME/bin:$PATH
+        
+        # Verificar Java novamente
+        echo "🔍 Verificando Java antes da compilação:"
+        java -version
+        
+        # Compilar APK com verbose para debug
         buildozer android debug --verbose
         
     - name: 📱 Verify APK
