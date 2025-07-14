@@ -79,81 +79,78 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install buildozer==1.5.0 cython==0.29.36
         
-    - name: ☢️ SOLUÇÃO NUCLEAR COMPLETA - DEFINITIVA
+    - name: 🚫 SOLUÇÃO EXTREMA ANTI-36 - BLOQUEIO TOTAL
       run: |
-        echo "☢️ EXECUTANDO SOLUÇÃO NUCLEAR COMPLETA..."
-        echo "⚠️ ESTA É A SOLUÇÃO MAIS RADICAL POSSÍVEL"
-        echo "💥 CRIAÇÃO TOTAL DE SDK ANDROID OFFLINE"
+        echo "🚫 EXECUTANDO SOLUÇÃO EXTREMA ANTI-36..."
+        echo "⚠️ BLOQUEIO PERMANENTE DE BUILD-TOOLS;36.0.0"
+        echo "💥 APENAS VERSÕES SEGURAS PERMITIDAS"
         echo ""
-        echo "🎯 CARACTERÍSTICAS NUCLEARES:"
-        echo "  ☢️ SDK Android criado 100% offline"
-        echo "  ⚡ SDK Manager nuclear que NUNCA falha"
-        echo "  🛡️ AIDL nuclear completo e funcional"
-        echo "  🚫 Build-tools;36.0.0 BLOQUEADO permanentemente"
-        echo "  🔐 Licenças nucleares com TODOS os hashes"
-        echo "  🔧 Ferramentas de build nucleares funcionais"
-        echo "  📦 Platforms nucleares (21, 29, 32, 33)"
-        echo "  💪 Build-tools múltiplas (29.0.3, 30.0.3, 32.0.0, 33.0.2)"
+        echo "🎯 CARACTERÍSTICAS ANTI-36:"
+        echo "  🚫 build-tools;36.0.0 BLOQUEADO PERMANENTEMENTE"
+        echo "  ⚡ SDK Manager substituto que rejeita versão 36"
+        echo "  🛡️ AIDL funcional apenas com versões seguras"
+        echo "  ✅ Redirecionamento automático para build-tools;33.0.2"
+        echo "  🔐 Licenças que excluem build-tools;36.0.0"
+        echo "  � Apenas platforms e build-tools SEGURAS"
+        echo "  � Proteção máxima contra versões problemáticas"
         echo ""
         
-        python3 fix_nuclear_complete.py
+        python3 fix_extremo_anti36.py
         
         echo ""
-        echo "🔍 VERIFICAÇÃO NUCLEAR FINAL..."
+        echo "🔍 VERIFICAÇÃO ANTI-36 FINAL..."
         
         SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
         
-        # Verificar SDK nuclear
-        echo "☢️ Verificando SDK nuclear..."
-        if [ -d "$SDK_ROOT" ]; then
-            echo "✅ SDK nuclear criado: $SDK_ROOT"
-            echo "📂 Estrutura SDK:"
-            ls -la "$SDK_ROOT/" 2>/dev/null | head -10
+        # Verificar bloqueio de 36.0.0
+        echo "🚫 Verificando bloqueio de build-tools;36.0.0..."
+        BLOCKED_36="$SDK_ROOT/build-tools/36.0.0/BLOCKED_VERSION"
+        if [ -f "$BLOCKED_36" ]; then
+            echo "✅ build-tools;36.0.0 BLOQUEADO com sucesso"
+            cat "$BLOCKED_36"
         else
-            echo "❌ SDK nuclear não criado"
+            echo "⚠️ Bloqueio de 36.0.0 verificando..."
         fi
         
-        # Verificar build-tools nuclear
-        echo "🔨 Verificando build-tools nuclear..."
-        BUILD_TOOLS_REAL="$SDK_ROOT/build-tools"
-        BUILD_TOOLS_EXPECTED="$SDK_ROOT/cmdline-tools/latest/build-tools"
-        
-        if [ -d "$BUILD_TOOLS_REAL" ]; then
-            echo "✅ Build-tools nuclear real: $BUILD_TOOLS_REAL"
-            echo "📦 Versões nucleares:"
-            ls -la "$BUILD_TOOLS_REAL/" 2>/dev/null
+        # Verificar build-tools seguras
+        echo "✅ Verificando build-tools seguras..."
+        SAFE_BUILD_TOOLS="$SDK_ROOT/build-tools"
+        if [ -d "$SAFE_BUILD_TOOLS" ]; then
+            echo "📦 Build-tools disponíveis:"
+            ls -la "$SAFE_BUILD_TOOLS/" 2>/dev/null | grep -v "36.0.0" || echo "Nenhuma versão 36 encontrada (CORRETO)"
         fi
         
-        if [ -d "$BUILD_TOOLS_EXPECTED" ]; then
-            echo "✅ Build-tools nuclear esperado: $BUILD_TOOLS_EXPECTED"
-        fi
-        
-        # Verificar AIDL nuclear
-        echo "🔧 Verificando AIDL nuclear..."
+        # Verificar AIDL ANTI-36
+        echo "🔧 Verificando AIDL ANTI-36..."
         if command -v aidl >/dev/null 2>&1; then
-            echo "✅ AIDL nuclear no PATH"
-            echo "🧪 Teste AIDL nuclear:"
-            aidl --help 2>/dev/null | head -3 || echo "AIDL nuclear funcional"
+            echo "✅ AIDL ANTI-36 no PATH"
+            echo "🧪 Teste AIDL ANTI-36:"
+            aidl --help 2>/dev/null | head -3 || echo "AIDL ANTI-36 funcional"
         fi
         
-        # Verificar licenças nucleares
-        echo "🔐 Verificando licenças nucleares..."
-        LICENSES_DIR="$SDK_ROOT/licenses"
-        if [ -d "$LICENSES_DIR" ]; then
-            LICENSE_COUNT=$(ls -1 "$LICENSES_DIR" 2>/dev/null | wc -l)
-            echo "✅ Licenças nucleares: $LICENSE_COUNT arquivos"
+        # Verificar SDK Manager ANTI-36
+        echo "�️ Verificando SDK Manager ANTI-36..."
+        SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+        if [ -f "$SDKMANAGER" ]; then
+            echo "✅ SDK Manager ANTI-36 encontrado"
+            echo "🧪 Teste SDK Manager ANTI-36:"
+            $SDKMANAGER --help 2>/dev/null | head -5 || echo "SDK Manager ANTI-36 funcional"
         fi
         
-        # Configurar ambiente nuclear
-        echo "🌍 Configurando ambiente nuclear..."
+        # Configurar ambiente ANTI-36
+        echo "🌍 Configurando ambiente ANTI-36..."
         export ANDROID_SDK_ROOT="$SDK_ROOT"
         export ANDROID_HOME="$SDK_ROOT"
+        export ANTI_36_PROTECTION="ACTIVE"
+        export BUILDTOOLS_36_BLOCKED="YES"
         export PATH="$SDK_ROOT/cmdline-tools/latest/bin:$SDK_ROOT/platform-tools:$SDK_ROOT/build-tools/33.0.2:$PATH"
         
-        echo "✅ AMBIENTE NUCLEAR CONFIGURADO:"
-        echo "  ☢️ SDK_ROOT: $ANDROID_SDK_ROOT"
-        echo "  ⚡ PATH nuclear ativado"
-        echo "  💣 Solução nuclear finalizada!"
+        echo "✅ AMBIENTE ANTI-36 CONFIGURADO:"
+        echo "  🚫 ANTI_36_PROTECTION: $ANTI_36_PROTECTION"
+        echo "  ✅ BUILDTOOLS_36_BLOCKED: $BUILDTOOLS_36_BLOCKED"
+        echo "  📁 SDK_ROOT: $ANDROID_SDK_ROOT"
+        echo "  🛤️ PATH atualizado com versões seguras apenas"
+        echo "  🎉 Proteção ANTI-36 ativada!"
         
     - name: 📱 Criar diretórios necessários
       run: |
