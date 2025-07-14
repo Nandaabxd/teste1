@@ -1,7 +1,23 @@
 [app]
 
 # (str) Title of your application
-title = NFC Reader & Writer PRO2
+t# (str) Android API to use (target SDK version)
+android.api = 33
+
+# (int) Minimum API your APK will support.
+android.minapi = 21
+
+# (str) Android NDK version to use
+android.ndk = 25b
+
+# (str) python-for-android specific python version to use
+python.version = 3.9
+
+# (str) Android SDK version to use (build tools)
+android.sdk = 33
+
+# (str) Android build tools version to use
+android.build_tools = 33.0.2der & Writer PRO2
 
 # (str) Package name
 package.name = nfcwriterpro2
