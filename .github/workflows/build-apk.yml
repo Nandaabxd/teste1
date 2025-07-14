@@ -35,7 +35,7 @@ jobs:
     - name: ☕ Setup Java JDK
       uses: actions/setup-java@v4
       with:
-        java-version: '11'
+        java-version: '17'
         distribution: 'temurin'
         
     - name: 📦 Cache Dependencies
@@ -69,6 +69,8 @@ jobs:
           
     - name: 📱 Install Android SDK
       uses: android-actions/setup-android@v3
+      env:
+        SKIP_JDK_VERSION_CHECK: true
         
     - name: 🔐 Accept Android SDK Licenses
       run: |
@@ -102,6 +104,8 @@ jobs:
         timeout 60s bash -c 'printf "y\n%.0s" {1..50} | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses' 2>/dev/null || true
         
         echo "✅ Licenças configuradas!"
+      env:
+        SKIP_JDK_VERSION_CHECK: true
         
     - name: 🛠️ Install Build Tools
       run: |
@@ -163,6 +167,8 @@ jobs:
         fi
         
         echo "✅ Build-tools configuradas!"
+      env:
+        SKIP_JDK_VERSION_CHECK: true
         
     - name: 🔧 Setup AIDL and Fix Buildozer
       run: |
@@ -304,6 +310,9 @@ jobs:
         echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
         echo "ANDROID_SDK_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
         
+        # Configurar variáveis específicas para Java 17 compatibility
+        echo "SKIP_JDK_VERSION_CHECK=true" >> $GITHUB_ENV
+        
         # Verificar estrutura final
         echo "🔍 Verificando estrutura buildozer:"
         ls -la ~/.buildozer/android/platform/android-sdk/cmdline-tools/ 2>/dev/null || echo "Cmdline-tools não encontrado"
@@ -338,9 +347,10 @@ jobs:
         echo "🎯 Target: Android API 33"
         echo "☕ Java: $(java -version 2>&1 | head -1)"
         
-        # Garantir que Java 11 seja usado
+        # Garantir que Java 17 seja usado com compatibilidade
         export JAVA_HOME=$JAVA_HOME
         export PATH=$JAVA_HOME/bin:$PATH
+        export SKIP_JDK_VERSION_CHECK=true
         
         # Verificar Java novamente
         echo "🔍 Verificando Java antes da compilação:"
@@ -348,6 +358,8 @@ jobs:
         
         # Compilar APK com verbose para debug
         buildozer android debug --verbose
+      env:
+        SKIP_JDK_VERSION_CHECK: true
         
     - name: 📱 Verify APK
       run: |
