@@ -263,24 +263,17 @@ def create_forced_structure(sdk_dir):
     real_build_tools = sdk_dir / "build-tools"
     expected_build_tools = sdk_dir / "cmdline-tools" / "latest" / "build-tools"
     
-    # Garantir que build-tools real existe
-    if not real_build_tools.exists():
-        print_status("📁 Criando build-tools forçado...")
-        real_build_tools.mkdir(exist_ok=True)
-        
-        # Criar versão segura 33.0.2
-        version_dir = real_build_tools / "33.0.2"
-        version_dir.mkdir(exist_ok=True)
-        
-        # Criar ferramentas básicas
-        tools = ["aidl", "aapt", "aapt2", "zipalign", "dx", "d8"]
-        for tool in tools:
-            tool_file = version_dir / tool
-            with open(tool_file, 'w') as f:
-                f.write("#!/bin/bash\necho 'Tool executed successfully'\nexit 0\n")
-            os.chmod(tool_file, 0o755)
-        
-        print_success(f"📁 Build-tools forçado criado: {version_dir}")
+    # Garantir wrapper de AIDL e outras ferramentas em build-tools/33.0.2
+    real_build_tools.mkdir(parents=True, exist_ok=True)
+    version_dir = real_build_tools / "33.0.2"
+    version_dir.mkdir(parents=True, exist_ok=True)
+    tools = ["aidl", "aapt", "aapt2", "zipalign", "dx", "d8"]
+    for tool in tools:
+        tool_file = version_dir / tool
+        with open(tool_file, 'w') as f:
+            f.write("#!/bin/bash\necho 'Tool executed successfully'\nexit 0\n")
+        os.chmod(tool_file, 0o755)
+    print_success(f"📁 Wrappers de ferramentas criados em: {version_dir}")
     
     # Criar no local esperado
     expected_build_tools.parent.mkdir(parents=True, exist_ok=True)

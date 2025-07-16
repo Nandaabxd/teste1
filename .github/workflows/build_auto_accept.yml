@@ -96,6 +96,11 @@ jobs:
         echo ""
         
         python3 fix_maximum_v2.py
+    - name: 🔧 Configurar Android SDK no ambiente do runner
+      run: |
+        echo "ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
+        echo "PATH=$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/platform/android-sdk/platform-tools:$HOME/.buildozer/android/platform/android-sdk/build-tools/33.0.2:$PATH" >> $GITHUB_ENV
         
         echo ""
         echo "🔍 VERIFICAÇÃO AUTO-ACCEPT FINAL..."
@@ -170,26 +175,22 @@ jobs:
       run: |
         echo "🚀 Iniciando compilação do APK com AUTO-ACCEPT..."
         echo "🤖 Usando SDK Android com aceitação automática..."
-        
-        # Configurar ambiente auto-accept final
+
+        # Configurar variáveis de ambiente para Android SDK
         export ANDROID_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
         export ANDROID_HOME="$ANDROID_SDK_ROOT"
-        export AUTO_ACCEPT_LICENSES="YES"
-        export NO_PROMPTS="TRUE"
-        export ACCEPT_ALL="AUTOMATIC"
         export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/33.0.2:$PATH"
-        
-        echo "🎯 Configuração AUTO-ACCEPT final:"
-        echo "  🤖 ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
-        echo "  ✅ AUTO_ACCEPT_LICENSES: $AUTO_ACCEPT_LICENSES"
-        echo "  🚫 NO_PROMPTS: $NO_PROMPTS"
-        echo "  🛤️ PATH atualizado com ferramentas auto-accept"
-        
+
+        echo "🎯 Variáveis de ambiente definidas:" 
+        echo "  ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+        echo "  ANDROID_HOME=$ANDROID_HOME"
+        echo "  PATH inclui cmdline-tools, platform-tools e build-tools" 
+
         # Compilar com buildozer AUTO-ACCEPT
         echo "💥 Iniciando buildozer com SDK AUTO-ACCEPT..."
-        echo "🤖 Todas as licenças serão aceitas automaticamente..."
         buildozer android debug
         
+
     - name: 📋 Verificar APK gerado
       run: |
         echo "🔍 Verificando APK gerado..."
